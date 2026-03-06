@@ -33,26 +33,26 @@ st.markdown("""
         border: 1px solid #d0d0d0;
         border-radius: 8px;
         overflow: hidden;
-        margin-bottom: 40px !important;      /* increased from 32px → more breathing room */
+        margin-bottom: 36px !important;
         box-shadow: 0 3px 12px rgba(0,0,0,0.1);
         position: relative;
-        min-height: 320px;                    /* prevents very short cards from collapsing */
     }
-    .card:last-child {
-        margin-bottom: 80px !important;       /* extra space after the very last card */
+    .card-image-wrapper {
+        position: relative;
+        width: 100%;
     }
     .card img {
         width: 100%;
         height: auto;
         display: block;
     }
-    .gradient-bottom {
+    .gradient-overlay {
         position: absolute;
         bottom: 0;
         left: 0;
         right: 0;
-        padding: 80px 20px 20px;              /* more padding at bottom */
-        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 100%);
+        padding: 90px 20px 20px;
+        background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
         color: white;
     }
     .card-title {
@@ -64,7 +64,7 @@ st.markdown("""
     .card-meta {
         font-size: 0.94rem;
         opacity: 0.92;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
     }
     .btn {
         background: #b71c1c !important;
@@ -85,10 +85,7 @@ st.markdown("""
     }
     hr {
         border-color: #aaa;
-        margin: 48px 0 64px 0;               /* more space around dividers */
-    }
-    .stContainer {
-        margin-bottom: 32px !important;       /* extra safeguard */
+        margin: 48px 0 64px 0;
     }
 </style>
 """, unsafe_allow_html=True)
