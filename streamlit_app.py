@@ -4,108 +4,112 @@ from datetime import datetime, timedelta
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# ────────────────────────────────────────────────
-#  Styling – newspaper + gradient cards
-# ────────────────────────────────────────────────
+# Force dark mode + newspaper-inspired dark styling
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #f8f5f0;
-        color: #1a1a1a;
-        font-family: Georgia, 'Times New Roman', serif;
-    }
-    .title-main {
-        font-size: 3.4rem;
-        font-weight: bold;
-        text-align: center;
-        color: #b71c1c;
-        margin: 20px 0 0 0;
-        letter-spacing: -1px;
-    }
-    .subtitle {
-        text-align: center;
-        font-size: 1.4rem;
-        color: #444;
-        margin-top: -12px;
-    }
-    .card {
-        background: white;
-        border: 1px solid #d0d0d0;
-        border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 36px !important;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-        position: relative;
-    }
-    .card-image-wrapper {
-        position: relative;
-        width: 100%;
-    }
-    .card img {
-        width: 100%;
-        height: auto;
-        display: block;
-    }
-    .gradient-overlay {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 90px 20px 20px;
-        background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
-        color: white;
-    }
-    .card-title {
-        font-size: 1.38rem;
-        font-weight: 700;
-        margin: 0 0 6px 0;
-        line-height: 1.28;
-    }
-    .card-meta {
-        font-size: 0.94rem;
-        opacity: 0.92;
-        margin-bottom: 12px;
-    }
-    .btn {
-        background: #b71c1c !important;
-        color: white !important;
-        border: none !important;
-        padding: 8px 16px !important;
-        border-radius: 5px !important;
-        font-weight: 600 !important;
-        margin-right: 10px !important;
-        cursor: pointer;
-    }
-    .btn-like { background: #2e7d32 !important; }
-    .btn-dislike { background: #c62828 !important; }
-    .btn-reset { 
-        background: #d32f2f !important; 
-        font-size: 0.9rem !important;
-        padding: 6px 14px !important;
-    }
-    hr {
-        border-color: #aaa;
-        margin: 48px 0 64px 0;
-    }
-</style>
+        [data-testid="stAppViewContainer"] {
+            background-color: #0e1117 !important;
+            color: #e0e0ff !important;
+        }
+        .stApp {
+            background-color: #0e1117 !important;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #161b22 !important;
+        }
+        .title-main {
+            font-size: 3.5rem;
+            font-weight: bold;
+            text-align: center;
+            color: #ff4d4d;
+            margin: 24px 0 4px 0;
+            letter-spacing: -1.2px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.45rem;
+            color: #aaa;
+            margin-top: -12px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            position: relative;
+        }
+        .card-image-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .gradient-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 100px 24px 24px;
+            background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.65) 40%, rgba(0,0,0,0.25) 70%, transparent 100%);
+            color: white;
+        }
+        .card-title {
+            font-size: 1.42rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+        }
+        .card-meta {
+            font-size: 0.96rem;
+            color: #ccc;
+            margin-bottom: 14px;
+        }
+        .btn {
+            background: #ff4d4d !important;
+            color: white !important;
+            border: none !important;
+            padding: 9px 18px !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            margin-right: 12px !important;
+            cursor: pointer;
+            font-size: 0.95rem !important;
+        }
+        .btn-like { background: #4caf50 !important; }
+        .btn-dislike { background: #e53935 !important; }
+        .btn-reset {
+            background: #c62828 !important;
+            font-size: 0.88rem !important;
+            padding: 6px 16px !important;
+            margin-top: 8px;
+        }
+        hr {
+            border-color: #444;
+            margin: 48px 0 64px 0;
+        }
+        .stInfo, .stSuccess {
+            background-color: #21262d !important;
+            color: #e0e0ff !important;
+        }
+    </style>
 """, unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  Header
-# ────────────────────────────────────────────────
+# Header
 st.markdown('<div class="title-main">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">with Lawrence</div>', unsafe_allow_html=True)
-st.caption("Conservative perspective • Republican-leaning sources", help="Fox, Breitbart, Newsmax, Daily Wire, OANN, Epoch Times, etc.")
+st.caption("Conservative • Republican-leaning sources • Unfiltered perspective")
 
-# ────────────────────────────────────────────────
-#  Session state for likes/dislikes
-# ────────────────────────────────────────────────
+# Session state for likes/dislikes
 if 'prefs' not in st.session_state:
-    st.session_state.prefs = {}          # link → +1 like / -1 dislike
+    st.session_state.prefs = {}
 
-# ────────────────────────────────────────────────
-#  RSS sources (Republican / conservative)
-# ────────────────────────────────────────────────
+# RSS sources
 RSS_FEEDS = {
     "Fox News": [
         "https://moxie.foxnews.com/google-publisher/latest.xml",
@@ -123,9 +127,6 @@ RSS_FEEDS = {
     "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
 }
 
-# ────────────────────────────────────────────────
-#  Fetch function – always returns list
-# ────────────────────────────────────────────────
 @st.cache_data(ttl=600)
 def fetch_all_news():
     articles = []
@@ -150,7 +151,6 @@ def fetch_all_news():
                         except:
                             pass
 
-                    # Image
                     img = None
                     if 'media_content' in entry:
                         for m in entry.media_content:
@@ -176,65 +176,57 @@ def fetch_all_news():
     articles.sort(key=lambda x: x['pub_dt'], reverse=True)
     return articles
 
-# Load news
 news = fetch_all_news()
 
-# ────────────────────────────────────────────────
-#  Sidebar controls
-# ────────────────────────────────────────────────
+# Sidebar
 mode = st.sidebar.selectbox("Section", ["All", "War", "Politics", "Economics"])
 
-if st.sidebar.button("Reset likes/dislikes", help="Clear personalization", key="reset"):
+if st.sidebar.button("Reset likes/dislikes", help="Clear personalization"):
     st.session_state.prefs = {}
     st.success("Preferences cleared")
     st.rerun()
 
-# ────────────────────────────────────────────────
-#  Simple personalization
-# ────────────────────────────────────────────────
+# Priority function
 def priority(article):
-    link = article['link']
-    val = st.session_state.prefs.get(link, 0)
+    val = st.session_state.prefs.get(article['link'], 0)
     return article['score'] + val * 1500 if val >= 0 else -999999
 
-# ────────────────────────────────────────────────
-#  Top Stories
-# ────────────────────────────────────────────────
+# Top Stories
 st.subheader("Top Stories")
 top_items = sorted(news[:40], key=priority, reverse=True)[:4]
 
 for item in top_items:
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
+        
+        st.markdown('<div class="card-image-wrapper">', unsafe_allow_html=True)
         if item['image']:
             st.image(item['image'], use_column_width=True)
         else:
-            st.markdown('<div style="height:160px; background:#555;"></div>', unsafe_allow_html=True)
-
+            st.markdown('<div style="height:220px; background:#1e1e2e;"></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
         st.markdown(f"""
-            <div class="gradient-bottom">
+            <div class="gradient-overlay">
                 <div class="card-title">
                     <a href="{item['link']}" target="_blank" style="color:white; text-decoration:none;">
                         {item['title']}
                     </a>
                 </div>
                 <div class="card-meta">📰 {item['source']} • {item['published']}</div>
-                <div style="margin-top:12px;">
+                <div style="margin-top:14px;">
                     <a href="{item['link']}" target="_blank">
                         <button class="btn">Read Article</button>
                     </a>
-                    <button class="btn btn-like" onclick="alert('Liked!')">👍 Like</button>
-                    <button class="btn btn-dislike" onclick="alert('Disliked!')">👎 Dislike</button>
                 </div>
             </div>
         """, unsafe_allow_html=True)
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
-# ────────────────────────────────────────────────
-#  Main feed
-# ────────────────────────────────────────────────
+# Main feed
 st.subheader(f"{mode} Feed")
 
 keywords = {
@@ -250,25 +242,28 @@ if mode != "All":
 items = sorted(items, key=priority, reverse=True)[:12]
 
 if not items:
-    st.info("No recent stories in this section right now – try another mode or refresh later.")
+    st.info("No recent stories in this section – try another mode or refresh later.")
 
 for item in items:
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
+        
+        st.markdown('<div class="card-image-wrapper">', unsafe_allow_html=True)
         if item['image']:
             st.image(item['image'], use_column_width=True)
         else:
-            st.markdown('<div style="height:160px; background:#555;"></div>', unsafe_allow_html=True)
-
+            st.markdown('<div style="height:220px; background:#1e1e2e;"></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
         st.markdown(f"""
-            <div class="gradient-bottom">
+            <div class="gradient-overlay">
                 <div class="card-title">
                     <a href="{item['link']}" target="_blank" style="color:white; text-decoration:none;">
                         {item['title']}
                     </a>
                 </div>
                 <div class="card-meta">📰 {item['source']} • {item['published']}</div>
-                <p style="margin:8px 0 12px 0; color:#eee; font-size:0.97rem;">{item['summary']}</p>
+                <p style="margin:10px 0 16px 0; color:#ddd; font-size:0.98rem;">{item['summary']}</p>
                 <div>
                     <a href="{item['link']}" target="_blank">
                         <button class="btn">Read Article</button>
@@ -276,11 +271,10 @@ for item in items:
                 </div>
             </div>
         """, unsafe_allow_html=True)
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  War probabilities
-# ────────────────────────────────────────────────
+# War mode probabilities
 if mode == "War":
     st.markdown("---")
     st.subheader("War Outlook – Estimated Next Moves")
@@ -298,4 +292,4 @@ if mode == "War":
             st.progress(pct / 100)
             st.caption(f"{pct}%")
 
-st.sidebar.caption("THEREALNEWS with Lawrence • Conservative feed")
+st.sidebar.caption("THEREALNEWS with Lawrence • Conservative feed • Dark mode forced")
