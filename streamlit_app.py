@@ -117,7 +117,7 @@ def fetch_all_news():
     pass  # ← paste your fetch function body here
 
 all_articles = fetch_all_news()
-
+st.write(f"Loaded {len(all_articles)} articles")
 def get_adjusted_priority(article):
     link = article['link']
     score = st.session_state.preferences.get(link, 0)
