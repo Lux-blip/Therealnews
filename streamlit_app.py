@@ -6,9 +6,7 @@ import time
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# ────────────────────────────────────────────────
-#  Persistent user settings (QoL)
-# ────────────────────────────────────────────────
+# Persistent settings
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 if 'font_size' not in st.session_state:
@@ -24,9 +22,7 @@ if 'auto_refresh' not in st.session_state:
 if 'favorite_sources' not in st.session_state:
     st.session_state.favorite_sources = set()
 
-# ────────────────────────────────────────────────
-#  Dark mode & font size styling
-# ────────────────────────────────────────────────
+# Styling – dark mode forced + responsive font
 font_sizes = {
     "Small": {"title": "1.2rem", "meta": "0.85rem", "summary": "0.92rem"},
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
@@ -52,6 +48,7 @@ if st.session_state.dark_mode:
             .btn-dislike {{ background: #e53935 !important; }}
             .btn-reset {{ background: #c62828 !important; font-size: 0.88rem !important; padding: 6px 16px !important; margin-top: 8px; }}
             hr {{ border-color: #444; margin: 48px 0 64px 0; }}
+            .prob-bar {{ margin: 8px 0; }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -59,9 +56,7 @@ if st.session_state.dark_mode:
 st.markdown('<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:#ff4d4d;">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  Sidebar – all QoL controls
-# ────────────────────────────────────────────────
+# Sidebar controls
 with st.sidebar:
     st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
@@ -97,9 +92,7 @@ with st.sidebar:
     st.markdown("**Daily Thought**")
     st.caption(random.choice(quotes))
 
-# ────────────────────────────────────────────────
-#  RSS sources – full dictionary included
-# ────────────────────────────────────────────────
+# RSS feeds
 RSS_FEEDS = {
     "Fox News": [
         "https://moxie.foxnews.com/google-publisher/latest.xml",
@@ -159,9 +152,7 @@ def fetch_all_news():
 
 news = fetch_all_news()
 
-# ────────────────────────────────────────────────
-#  Filtering
-# ────────────────────────────────────────────────
+# Filtering
 filtered = news
 if st.session_state.favorite_sources:
     filtered = [a for a in filtered if a['source'] in st.session_state.favorite_sources]
@@ -179,15 +170,13 @@ if search_term:
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"])
 if mode != "All":
     keywords = {
-        "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato", "conflict"],
-        "Politics": ["trump", "biden", "harris", "election", "congress", "senate", "republican", "democrat", "border"],
-        "Economics": ["economy", "inflation", "jobs", "market", "fed", "tariff", "oil", "recession"]
+        "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato", "conflict", "strike", "defense"],
+        "Politics": ["trump", "biden", "harris", "election", "congress", "senate", "republican", "democrat", "border", "maga"],
+        "Economics": ["economy", "inflation", "jobs", "market", "fed", "tariff", "oil", "recession", "trade", "spending"]
     }
     filtered = [a for a in filtered if any(k.lower() in (a['title']+a['summary']).lower() for k in keywords.get(mode, []))]
 
-# ────────────────────────────────────────────────
-#  Cards
-# ────────────────────────────────────────────────
+# Display feed
 st.subheader(f"{mode} Feed – {len(filtered)} stories")
 
 for item in filtered[:15]:
@@ -221,10 +210,33 @@ for item in filtered[:15]:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ────────────────────────────────────────────────
-#  Auto-refresh
+#  WAR MODE PROBABILITIES – this is the new part
 # ────────────────────────────────────────────────
+if mode == "War":
+    st.markdown("---")
+    st.subheader("War Outlook – Estimated Next Moves")
+    st.caption("Illustrative probabilities based on current conservative reporting patterns")
+
+    war_probs = [
+        ("Major escalation / new front opens", 38),
+        ("U.S. or Israel directly strikes Iran", 44),
+        ("Sharp spike in energy / oil prices", 59),
+        ("Temporary ceasefire or talks gain traction", 22),
+        ("Expanded sanctions or cyber retaliation", 63),
+        ("Proxy conflict widens (e.g. new region)", 31),
+        ("De-escalation via back-channel diplomacy", 18)
+    ]
+
+    cols = st.columns(2)
+    for i, (event, percent) in enumerate(war_probs):
+        with cols[i % 2]:
+            st.markdown(f"**{event}**")
+            st.progress(percent / 100)
+            st.caption(f"{percent}% chance")
+
+# Auto-refresh
 if st.session_state.auto_refresh:
-    time.sleep(300)
+    time.sleep(300)  # 5 minutes
     st.rerun()
 
 st.sidebar.caption("THEREALNEWS with Lawrence • Updated March 2026")
