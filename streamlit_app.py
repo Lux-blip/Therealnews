@@ -6,7 +6,9 @@ import time
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# Persistent settings
+# ────────────────────────────────────────────────
+# Persistent settings (must come first)
+# ────────────────────────────────────────────────
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 if 'font_size' not in st.session_state:
@@ -24,15 +26,38 @@ if 'favorite_sources' not in st.session_state:
 if 'loaded_count' not in st.session_state:
     st.session_state.loaded_count = 15
 
+# ────────────────────────────────────────────────
+# RSS feeds – MUST be defined BEFORE sidebar uses it
+# ────────────────────────────────────────────────
+RSS_FEEDS = {
+    "Fox News": [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/politics.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml"
+    ],
+    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
+    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
+    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
+    "The Federalist": ["https://thefederalist.com/feed/"],
+    "Epoch Times": ["https://www.theepochtimes.com/feed"],
+    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
+    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
+    "National Review": ["https://www.nationalreview.com/feed"],
+    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
+}
+
+# ────────────────────────────────────────────────
 # Font sizes
+# ────────────────────────────────────────────────
 font_sizes = {
     "Small": {"title": "1.2rem", "meta": "0.85rem", "summary": "0.92rem"},
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
     "Large": {"title": "1.6rem", "meta": "1.05rem", "summary": "1.08rem"}
 }
-fs = font_sizes[st.session_state.font_size]
 
+# ────────────────────────────────────────────────
 # Mode colors
+# ────────────────────────────────────────────────
 mode_colors = {
     "All": {"accent": "#ff4d4d", "header": "#ff4d4d"},
     "War": {"accent": "#c62828", "header": "#ff4d4d"},
@@ -40,11 +65,16 @@ mode_colors = {
     "Economics": {"accent": "#ffb300", "header": "#ffca28"}
 }
 
-# Select mode FIRST
+# ────────────────────────────────────────────────
+# Select mode EARLY (before CSS)
+# ────────────────────────────────────────────────
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"], index=0)
 colors = mode_colors.get(mode, mode_colors["All"])
 
+# ────────────────────────────────────────────────
 # Dynamic styling
+# ────────────────────────────────────────────────
+fs = font_sizes[st.session_state.font_size]
 if st.session_state.dark_mode:
     st.markdown(f"""
         <style>
@@ -70,7 +100,9 @@ if st.session_state.dark_mode:
 st.markdown(f'<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:{colors["header"]};">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# Sidebar
+# ────────────────────────────────────────────────
+# Sidebar – comes AFTER RSS_FEEDS is defined
+# ────────────────────────────────────────────────
 with st.sidebar:
     st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
@@ -103,24 +135,9 @@ with st.sidebar:
     st.markdown("**Daily Thought**")
     st.caption(random.choice(quotes))
 
-# RSS feeds
-RSS_FEEDS = {
-    "Fox News": [
-        "https://moxie.foxnews.com/google-publisher/latest.xml",
-        "https://moxie.foxnews.com/google-publisher/politics.xml",
-        "https://moxie.foxnews.com/google-publisher/world.xml"
-    ],
-    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
-    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
-    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
-    "The Federalist": ["https://thefederalist.com/feed/"],
-    "Epoch Times": ["https://www.theepochtimes.com/feed"],
-    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
-    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
-    "National Review": ["https://www.nationalreview.com/feed"],
-    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
-}
-
+# ────────────────────────────────────────────────
+# Fetch news
+# ────────────────────────────────────────────────
 @st.cache_data(ttl=600)
 def fetch_all_news():
     articles = []
@@ -136,16 +153,7 @@ def fetch_all_news():
                     pub_date = datetime(*pub_parsed[:6]) if pub_parsed else now
                     if pub_date < one_day_ago:
                         continue
-
-                    # Relative time
-                    delta = now - pub_date
-                    if delta.days == 0:
-                        hours = delta.seconds // 3600
-                        time_str = f"{hours}h ago" if hours > 0 else "Just now"
-                    elif delta.days == 1:
-                        time_str = "Yesterday"
-                    else:
-                        time_str = pub_date.strftime("%b %d")
+                    date_str = pub_date.strftime("%b %d %H:%M")
 
                     img = None
                     if 'media_content' in entry:
@@ -158,7 +166,7 @@ def fetch_all_news():
                         'title': entry.get('title', 'No title'),
                         'summary': (entry.get('summary') or entry.get('description', ''))[:240] + '...',
                         'link': entry.get('link', '#'),
-                        'published': time_str,
+                        'published': date_str,
                         'pub_dt': pub_date,
                         'source': source,
                         'image': img,
@@ -211,7 +219,7 @@ for item in displayed:
             st.markdown('<div style="height:220px; background:#1e1e2e;"></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        badge_color = mode_colors.get(mode, mode_colors["All"])["accent"]
+        badge_color = colors["accent"]
         st.markdown(f"""
             <div class="gradient-overlay">
                 <div class="card-title">
@@ -226,11 +234,6 @@ for item in displayed:
                     <a href="{item['link']}" target="_blank">
                         <button class="btn">Read Article</button>
                     </a>
-                    <button class="btn btn-like" onclick="alert('Liked!')">👍 Like</button>
-                    <button class="btn btn-dislike" onclick="alert('Disliked!')">👎 Dislike</button>
-                    <button onclick="navigator.clipboard.writeText('{item['link']}'); alert('Link copied!')">Share</button>
-                    <button onclick="alert('Marked as read')">Mark Read</button>
-                    <button onclick="alert('Saved')">Save</button>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -243,7 +246,7 @@ if len(filtered) > st.session_state.loaded_count:
         st.session_state.loaded_count += 10
         st.rerun()
 
-# War mode probabilities – red bars
+# War probabilities – red bars
 if mode == "War":
     st.markdown("---")
     st.subheader("War Outlook – Estimated Next Moves")
