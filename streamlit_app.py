@@ -37,8 +37,7 @@ if 'reset_trigger' not in st.session_state:
 # RSS sources
 RSS_FEEDS = { ... }  # Keep your full RSS_FEEDS dict here from previous code
 
-@st.cache_data(ttl=600)
-    def fetch_all_news():
+@st.cache_data(ttl=600) def fetch_all_news():
     # Same as before - fetch, extract image, add pub_datetime, importance_score
     # (copy the full fetch_all_news function from your last working version)
     # For brevity: assume it returns list of dicts with 'link', 'title', 'summary', 'image', 'source', 'published', 'pub_datetime', 'importance_score'
