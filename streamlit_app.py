@@ -6,9 +6,7 @@ import time
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# ────────────────────────────────────────────────
-#  Persistent settings
-# ────────────────────────────────────────────────
+# Persistent settings
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 if 'font_size' not in st.session_state:
@@ -24,19 +22,14 @@ if 'auto_refresh' not in st.session_state:
 if 'favorite_sources' not in st.session_state:
     st.session_state.favorite_sources = set()
 
-# ────────────────────────────────────────────────
-#  Font sizes
-# ────────────────────────────────────────────────
+# Font sizes
 font_sizes = {
     "Small": {"title": "1.2rem", "meta": "0.85rem", "summary": "0.92rem"},
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
     "Large": {"title": "1.6rem", "meta": "1.05rem", "summary": "1.08rem"}
 }
-fs = font_sizes[st.session_state.font_size]
 
-# ────────────────────────────────────────────────
-#  Mode-specific colors
-# ────────────────────────────────────────────────
+# Mode colors – defined early
 mode_colors = {
     "All": {"accent": "#ff4d4d", "header": "#ff4d4d"},
     "War": {"accent": "#c62828", "header": "#ff4d4d"},
@@ -44,9 +37,14 @@ mode_colors = {
     "Economics": {"accent": "#ffb300", "header": "#ffca28"}
 }
 
-# ────────────────────────────────────────────────
-#  Dynamic styling
-# ────────────────────────────────────────────────
+# Select mode FIRST (before CSS)
+mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"], index=0)
+
+# Get colors for current mode
+colors = mode_colors.get(mode, mode_colors["All"])
+
+# Dynamic styling (now safe because mode is defined)
+fs = font_sizes[st.session_state.font_size]
 if st.session_state.dark_mode:
     st.markdown(f"""
         <style>
@@ -59,7 +57,7 @@ if st.session_state.dark_mode:
             .card-title {{ font-size: {fs['title']}; font-weight: 700; margin: 0 0 8px 0; line-height: 1.3; }}
             .card-meta {{ font-size: {fs['meta']}; color: #ccc; margin-bottom: 14px; }}
             .summary {{ font-size: {fs['summary']}; color: #ddd; margin: 10px 0 16px 0; }}
-            .btn {{ background: {mode_colors.get(mode, mode_colors["All"])['accent']} !important; color: white !important; border: none !important; padding: 9px 18px !important; border-radius: 6px !important; font-weight: 600 !important; margin-right: 12px !important; cursor: pointer; font-size: 0.95rem !important; }}
+            .btn {{ background: {colors['accent']} !important; color: white !important; border: none !important; padding: 9px 18px !important; border-radius: 6px !important; font-weight: 600 !important; margin-right: 12px !important; cursor: pointer; font-size: 0.95rem !important; }}
             .btn-like {{ background: #4caf50 !important; }}
             .btn-dislike {{ background: #e53935 !important; }}
             .btn-reset {{ background: #c62828 !important; font-size: 0.88rem !important; padding: 6px 16px !important; margin-top: 8px; }}
@@ -68,13 +66,10 @@ if st.session_state.dark_mode:
     """, unsafe_allow_html=True)
 
 # Header with mode color
-colors = mode_colors.get(mode, mode_colors["All"])
 st.markdown(f'<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:{colors["header"]};">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  Sidebar – QoL controls
-# ────────────────────────────────────────────────
+# Sidebar controls
 with st.sidebar:
     st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
@@ -82,7 +77,7 @@ with st.sidebar:
     st.session_state.auto_refresh = st.checkbox("Auto-refresh every 5 min", value=st.session_state.auto_refresh)
 
     st.subheader("Favorite Sources")
-    sources = list(RSS_FEEDS.keys())
+    sources = ["Fox News", "Breitbart", "Newsmax", "Daily Wire", "The Federalist", "Epoch Times", "OANN", "Washington Examiner", "National Review", "The Blaze"]
     selected = st.multiselect("Select sources", sources, default=list(st.session_state.favorite_sources))
     st.session_state.favorite_sources = set(selected)
 
@@ -107,9 +102,7 @@ with st.sidebar:
     st.markdown("**Daily Thought**")
     st.caption(random.choice(quotes))
 
-# ────────────────────────────────────────────────
-#  RSS sources
-# ────────────────────────────────────────────────
+# RSS feeds
 RSS_FEEDS = {
     "Fox News": [
         "https://moxie.foxnews.com/google-publisher/latest.xml",
@@ -169,9 +162,7 @@ def fetch_all_news():
 
 news = fetch_all_news()
 
-# ────────────────────────────────────────────────
-#  Filtering
-# ────────────────────────────────────────────────
+# Filtering
 filtered = news
 if st.session_state.favorite_sources:
     filtered = [a for a in filtered if a['source'] in st.session_state.favorite_sources]
@@ -194,9 +185,7 @@ if mode != "All":
     }
     filtered = [a for a in filtered if any(k.lower() in (a['title']+a['summary']).lower() for k in keywords.get(mode, []))]
 
-# ────────────────────────────────────────────────
-#  Display feed
-# ────────────────────────────────────────────────
+# Display feed
 st.subheader(f"{mode} Feed – {len(filtered)} stories")
 
 for item in filtered[:15]:
@@ -229,9 +218,7 @@ for item in filtered[:15]:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  War mode probabilities – red bars
-# ────────────────────────────────────────────────
+# War mode probabilities – red bars
 if mode == "War":
     st.markdown("---")
     st.subheader("War Outlook – Estimated Next Moves")
@@ -258,9 +245,7 @@ if mode == "War":
             """, unsafe_allow_html=True)
             st.markdown(f"<span style='color: #ff5252; font-weight: 600;'>{percent}%</span>", unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  Auto-refresh
-# ────────────────────────────────────────────────
+# Auto-refresh
 if st.session_state.auto_refresh:
     time.sleep(300)
     st.rerun()
