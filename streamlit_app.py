@@ -69,7 +69,7 @@ with st.sidebar:
     st.session_state.auto_refresh = st.checkbox("Auto-refresh every 5 min", value=st.session_state.auto_refresh)
 
     st.subheader("Favorite Sources")
-    sources = list(RSS_FEEDS.keys())
+    sources = ["Fox News", "Breitbart", "Newsmax", "Daily Wire", "The Federalist", "Epoch Times", "OANN", "Washington Examiner", "National Review", "The Blaze"]
     selected = st.multiselect("Select sources", sources, default=list(st.session_state.favorite_sources))
     st.session_state.favorite_sources = set(selected)
 
@@ -98,10 +98,14 @@ with st.sidebar:
     st.caption(random.choice(quotes))
 
 # ────────────────────────────────────────────────
-#  RSS sources
+#  RSS sources – full dictionary included
 # ────────────────────────────────────────────────
 RSS_FEEDS = {
-    "Fox News": ["https://moxie.foxnews.com/google-publisher/latest.xml"],
+    "Fox News": [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/politics.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml"
+    ],
     "Breitbart": ["https://feeds.feedburner.com/breitbart"],
     "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
     "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
@@ -175,9 +179,9 @@ if search_term:
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"])
 if mode != "All":
     keywords = {
-        "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato"],
-        "Politics": ["trump", "biden", "harris", "election", "congress", "republican", "border"],
-        "Economics": ["economy", "inflation", "jobs", "market", "tariff", "oil"]
+        "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato", "conflict"],
+        "Politics": ["trump", "biden", "harris", "election", "congress", "senate", "republican", "democrat", "border"],
+        "Economics": ["economy", "inflation", "jobs", "market", "fed", "tariff", "oil", "recession"]
     }
     filtered = [a for a in filtered if any(k.lower() in (a['title']+a['summary']).lower() for k in keywords.get(mode, []))]
 
@@ -210,8 +214,6 @@ for item in filtered[:15]:
                     <a href="{item['link']}" target="_blank">
                         <button class="btn">Read Article</button>
                     </a>
-                    <button class="btn btn-like" onclick="alert('Liked!')">👍 Like</button>
-                    <button class="btn btn-dislike" onclick="alert('Disliked!')">👎 Dislike</button>
                 </div>
             </div>
         """, unsafe_allow_html=True)
