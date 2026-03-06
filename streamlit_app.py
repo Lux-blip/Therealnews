@@ -7,7 +7,7 @@ import time
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
 # ────────────────────────────────────────────────
-#  Persistent settings
+#  Persistent user settings (QoL)
 # ────────────────────────────────────────────────
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
@@ -40,123 +40,189 @@ if st.session_state.dark_mode:
             [data-testid="stAppViewContainer"] {{ background-color: #0e1117 !important; }}
             section[data-testid="stSidebar"] {{ background-color: #161b22 !important; }}
             .stApp {{ background-color: #0e1117 !important; color: #e0e0ff !important; }}
-            .card {{ background: #161b22; border: 1px solid #30363d; color: white; }}
-            .gradient-overlay {{ background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.65) 40%, transparent 100%) !important; }}
-            .card-title {{ font-size: {fs['title']}; }}
-            .card-meta {{ font-size: {fs['meta']}; color: #ccc; }}
-            .summary {{ font-size: {fs['summary']}; color: #ddd; }}
-        </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown(f"""
-        <style>
-            .card {{ background: white; border: 1px solid #d0d0d0; }}
-            .gradient-overlay {{ background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 100%) !important; }}
-            .card-title {{ font-size: {fs['title']}; }}
-            .card-meta {{ font-size: {fs['meta']}; }}
-            .summary {{ font-size: {fs['summary']}; }}
+            .card {{ background: #161b22; border: 1px solid #30363d; color: white; border-radius: 10px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); position: relative; }}
+            .card-image-wrapper {{ position: relative; width: 100%; }}
+            .card img {{ width: 100%; height: auto; display: block; }}
+            .gradient-overlay {{ position: absolute; bottom: 0; left: 0; right: 0; padding: 100px 24px 24px; background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.65) 40%, transparent 100%); color: white; }}
+            .card-title {{ font-size: {fs['title']}; font-weight: 700; margin: 0 0 8px 0; line-height: 1.3; }}
+            .card-meta {{ font-size: {fs['meta']}; color: #ccc; margin-bottom: 14px; }}
+            .summary {{ font-size: {fs['summary']}; color: #ddd; margin: 10px 0 16px 0; }}
+            .btn {{ background: #ff4d4d !important; color: white !important; border: none !important; padding: 9px 18px !important; border-radius: 6px !important; font-weight: 600 !important; margin-right: 12px !important; cursor: pointer; font-size: 0.95rem !important; }}
+            .btn-like {{ background: #4caf50 !important; }}
+            .btn-dislike {{ background: #e53935 !important; }}
+            .btn-reset {{ background: #c62828 !important; font-size: 0.88rem !important; padding: 6px 16px !important; margin-top: 8px; }}
+            hr {{ border-color: #444; margin: 48px 0 64px 0; }}
         </style>
     """, unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  Header & controls
-# ────────────────────────────────────────────────
+# Header
 st.markdown('<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:#ff4d4d;">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# Sidebar QoL controls
+# ────────────────────────────────────────────────
+#  Sidebar – all QoL controls
+# ────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Controls")
+    st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
-    st.session_state.font_size = st.selectbox("Font Size", ["Small", "Medium", "Large"], index=["Small","Medium","Large"].index(st.session_state.font_size))
+    st.session_state.font_size = st.selectbox("Text Size", ["Small", "Medium", "Large"], index=["Small","Medium","Large"].index(st.session_state.font_size))
     st.session_state.auto_refresh = st.checkbox("Auto-refresh every 5 min", value=st.session_state.auto_refresh)
-    st.session_state.favorite_sources = set(st.multiselect("Favorite Sources", list(RSS_FEEDS.keys()), default=list(st.session_state.favorite_sources)))
+
+    st.subheader("Favorite Sources")
+    sources = list(RSS_FEEDS.keys())
+    selected = st.multiselect("Select sources", sources, default=list(st.session_state.favorite_sources))
+    st.session_state.favorite_sources = set(selected)
 
     st.subheader("Saved Stories")
-    for saved in st.session_state.saved_stories[:5]:
-        st.markdown(f"- [{saved['title'][:60]}...]({saved['link']})")
+    for s in st.session_state.saved_stories[:6]:
+        st.markdown(f"• [{s['title'][:50]}...]({s['link']})")
     if st.button("Clear Saved"):
         st.session_state.saved_stories = []
+        st.rerun()
 
     st.subheader("Search History")
-    for past in st.session_state.search_history[-5:]:
-        if st.button(past[:30] + "..." if len(past)>30 else past, key=f"hist_{past}"):
-            st.session_state.search_term = past
+    for q in st.session_state.search_history[-6:]:
+        if st.button(q[:35] + "..." if len(q)>35 else q, key=f"hist_{q}"):
+            st.session_state.search_term = q
             st.rerun()
 
-    st.caption("THEREALNEWS with Lawrence • Conservative feed")
+    # Random conservative quote
+    quotes = [
+        "Freedom is never more than one generation away from extinction. — Ronald Reagan",
+        "Government is not the solution to our problem; government is the problem. — Ronald Reagan",
+        "The nine most terrifying words in the English language are: I'm from the government and I'm here to help. — Ronald Reagan",
+        "Make America Great Again. — Donald J. Trump",
+        "We will make America strong again. We will make America proud again. — Donald J. Trump"
+    ]
+    st.markdown("**Daily Thought**")
+    st.caption(random.choice(quotes))
 
 # ────────────────────────────────────────────────
-#  RSS & fetch (same as before – abbreviated)
+#  RSS sources
 # ────────────────────────────────────────────────
-RSS_FEEDS = { ... }  # ← paste your full RSS_FEEDS dict here from previous versions
+RSS_FEEDS = {
+    "Fox News": ["https://moxie.foxnews.com/google-publisher/latest.xml"],
+    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
+    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
+    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
+    "The Federalist": ["https://thefederalist.com/feed/"],
+    "Epoch Times": ["https://www.theepochtimes.com/feed"],
+    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
+    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
+    "National Review": ["https://www.nationalreview.com/feed"],
+    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
+}
 
 @st.cache_data(ttl=600)
 def fetch_all_news():
-    # ← paste your full fetch_all_news function here (the safe one with try/except)
-    # make sure it returns list of dicts with 'title', 'link', 'summary', 'image', 'source', 'published', 'pub_dt', 'score'
-    pass
+    articles = []
+    now = datetime.utcnow()
+    one_day_ago = now - timedelta(days=1)
+
+    for source, urls in RSS_FEEDS.items():
+        for url in urls:
+            try:
+                feed = feedparser.parse(url)
+                for entry in feed.entries[:10]:
+                    pub_parsed = entry.get('published_parsed') or entry.get('updated_parsed')
+                    pub_date = datetime(*pub_parsed[:6]) if pub_parsed else now
+                    if pub_date < one_day_ago:
+                        continue
+                    date_str = pub_date.strftime("%b %d %H:%M")
+
+                    img = None
+                    if 'media_content' in entry:
+                        for m in entry.media_content:
+                            if m.get('medium') == 'image' and 'url' in m:
+                                img = m['url']
+                                break
+
+                    articles.append({
+                        'title': entry.get('title', 'No title'),
+                        'summary': (entry.get('summary') or entry.get('description', ''))[:240] + '...',
+                        'link': entry.get('link', '#'),
+                        'published': date_str,
+                        'pub_dt': pub_date,
+                        'source': source,
+                        'image': img,
+                        'score': len(entry.get('title','')) + len(entry.get('summary','')) * 0.6
+                    })
+            except:
+                pass
+
+    articles.sort(key=lambda x: x['pub_dt'], reverse=True)
+    return articles
 
 news = fetch_all_news()
 
 # ────────────────────────────────────────────────
-#  Filter by favorites, read, mode, search
+#  Filtering
 # ────────────────────────────────────────────────
+filtered = news
 if st.session_state.favorite_sources:
-    news = [a for a in news if a['source'] in st.session_state.favorite_sources]
+    filtered = [a for a in filtered if a['source'] in st.session_state.favorite_sources]
 
-news = [a for a in news if a['link'] not in st.session_state.read_stories]
+filtered = [a for a in filtered if a['link'] not in st.session_state.read_stories]
 
-search_term = st.text_input("Search headlines")
+search_term = st.text_input("Search headlines", value=st.session_state.get('search_term', ''))
 if search_term and search_term not in st.session_state.search_history:
     st.session_state.search_history.append(search_term)
-    if len(st.session_state.search_history) > 10:
-        st.session_state.search_history = st.session_state.search_history[-10:]
+    st.session_state.search_term = search_term
 
 if search_term:
-    news = [a for a in news if search_term.lower() in (a['title'] + a['summary']).lower()]
+    filtered = [a for a in filtered if search_term.lower() in (a['title'] + a['summary']).lower()]
 
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"])
-# ... (add mode keyword filtering as before)
+if mode != "All":
+    keywords = {
+        "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato"],
+        "Politics": ["trump", "biden", "harris", "election", "congress", "republican", "border"],
+        "Economics": ["economy", "inflation", "jobs", "market", "tariff", "oil"]
+    }
+    filtered = [a for a in filtered if any(k.lower() in (a['title']+a['summary']).lower() for k in keywords.get(mode, []))]
 
 # ────────────────────────────────────────────────
-#  Cards with mark read, save, share
+#  Cards
 # ────────────────────────────────────────────────
-for item in news[:12]:  # or implement load more
+st.subheader(f"{mode} Feed – {len(filtered)} stories")
+
+for item in filtered[:15]:
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        # image + gradient overlay as before
-        # ...
-        col1, col2, col3 = st.columns([1,1,1])
-        with col1:
-            if st.button("Mark Read", key=f"read_{item['link']}"):
-                st.session_state.read_stories.add(item['link'])
-                st.rerun()
-        with col2:
-            if st.button("Save", key=f"save_{item['link']}"):
-                if item not in st.session_state.saved_stories:
-                    st.session_state.saved_stories.append(item)
-                st.toast("Saved!")
-        with col3:
-            if st.button("Share", key=f"share_{item['link']}"):
-                st.write(f"Link copied: {item['link']}")
-                st.toast("Link copied to clipboard!")
+
+        st.markdown('<div class="card-image-wrapper">', unsafe_allow_html=True)
+        if item['image']:
+            st.image(item['image'], use_column_width=True)
+        else:
+            st.markdown('<div style="height:220px; background:#1e1e2e;"></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown(f"""
+            <div class="gradient-overlay">
+                <div class="card-title">
+                    <a href="{item['link']}" target="_blank" style="color:white; text-decoration:none;">
+                        {item['title']}
+                    </a>
+                </div>
+                <div class="card-meta">📰 {item['source']} • {item['published']}</div>
+                <p class="summary">{item['summary']}</p>
+                <div style="margin-top:12px;">
+                    <a href="{item['link']}" target="_blank">
+                        <button class="btn">Read Article</button>
+                    </a>
+                    <button class="btn btn-like" onclick="alert('Liked!')">👍 Like</button>
+                    <button class="btn btn-dislike" onclick="alert('Disliked!')">👎 Dislike</button>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ────────────────────────────────────────────────
-#  Auto-refresh logic
+#  Auto-refresh
 # ────────────────────────────────────────────────
 if st.session_state.auto_refresh:
-    time.sleep(300)  # 5 min
+    time.sleep(300)
     st.rerun()
 
-# ────────────────────────────────────────────────
-#  Random quote sidebar
-# ────────────────────────────────────────────────
-quotes = [
-    "The only thing we have to fear is fear itself. — FDR (but we prefer Reagan)",
-    "Government is not the solution to our problem; government is the problem. — Ronald Reagan",
-    "Make America Great Again. — Donald J. Trump",
-    # add more...
-]
-st.sidebar.markdown("**Daily Thought**")
-st.sidebar.caption(random.choice(quotes))
+st.sidebar.caption("THEREALNEWS with Lawrence • Updated March 2026")
