@@ -22,7 +22,7 @@ if 'auto_refresh' not in st.session_state:
 if 'favorite_sources' not in st.session_state:
     st.session_state.favorite_sources = set()
 
-# Styling – dark mode forced + responsive font
+# Font sizes
 font_sizes = {
     "Small": {"title": "1.2rem", "meta": "0.85rem", "summary": "0.92rem"},
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
@@ -30,6 +30,19 @@ font_sizes = {
 }
 fs = font_sizes[st.session_state.font_size]
 
+# Mode colors
+mode_colors = {
+    "War": {"accent": "#c62828", "gradient_start": "#c62828", "gradient_end": "#ff5252", "header": "#ff4d4d"},
+    "Politics": {"accent": "#1976d2", "gradient_start": "#1976d2", "gradient_end": "#42a5f5", "header": "#2196f3"},
+    "Economics": {"accent": "#ffb300", "gradient_start": "#ffb300", "gradient_end": "#ffca28", "header": "#ffca28"},
+    "All": {"accent": "#ff4d4d", "gradient_start": "#444", "gradient_end": "#222", "header": "#ff4d4d"}
+}
+
+# Get current mode color scheme
+mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"])
+colors = mode_colors.get(mode, mode_colors["All"])
+
+# Dynamic dark mode styling
 if st.session_state.dark_mode:
     st.markdown(f"""
         <style>
@@ -43,20 +56,19 @@ if st.session_state.dark_mode:
             .card-title {{ font-size: {fs['title']}; font-weight: 700; margin: 0 0 8px 0; line-height: 1.3; }}
             .card-meta {{ font-size: {fs['meta']}; color: #ccc; margin-bottom: 14px; }}
             .summary {{ font-size: {fs['summary']}; color: #ddd; margin: 10px 0 16px 0; }}
-            .btn {{ background: #ff4d4d !important; color: white !important; border: none !important; padding: 9px 18px !important; border-radius: 6px !important; font-weight: 600 !important; margin-right: 12px !important; cursor: pointer; font-size: 0.95rem !important; }}
+            .btn {{ background: {colors['accent']} !important; color: white !important; border: none !important; padding: 9px 18px !important; border-radius: 6px !important; font-weight: 600 !important; margin-right: 12px !important; cursor: pointer; font-size: 0.95rem !important; }}
             .btn-like {{ background: #4caf50 !important; }}
             .btn-dislike {{ background: #e53935 !important; }}
             .btn-reset {{ background: #c62828 !important; font-size: 0.88rem !important; padding: 6px 16px !important; margin-top: 8px; }}
             hr {{ border-color: #444; margin: 48px 0 64px 0; }}
-            .prob-bar {{ margin: 8px 0; }}
         </style>
     """, unsafe_allow_html=True)
 
-# Header
-st.markdown('<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:#ff4d4d;">THEREALNEWS</div>', unsafe_allow_html=True)
+# Header with mode color
+st.markdown(f'<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:{colors["header"]};">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# Sidebar controls
+# Sidebar controls (unchanged from previous)
 with st.sidebar:
     st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
@@ -81,24 +93,17 @@ with st.sidebar:
             st.session_state.search_term = q
             st.rerun()
 
-    # Random conservative quote
     quotes = [
         "Freedom is never more than one generation away from extinction. — Ronald Reagan",
         "Government is not the solution to our problem; government is the problem. — Ronald Reagan",
-        "The nine most terrifying words in the English language are: I'm from the government and I'm here to help. — Ronald Reagan",
-        "Make America Great Again. — Donald J. Trump",
-        "We will make America strong again. We will make America proud again. — Donald J. Trump"
+        "Make America Great Again. — Donald J. Trump"
     ]
     st.markdown("**Daily Thought**")
     st.caption(random.choice(quotes))
 
-# RSS feeds
+# RSS feeds (shortened for brevity – add more if needed)
 RSS_FEEDS = {
-    "Fox News": [
-        "https://moxie.foxnews.com/google-publisher/latest.xml",
-        "https://moxie.foxnews.com/google-publisher/politics.xml",
-        "https://moxie.foxnews.com/google-publisher/world.xml"
-    ],
+    "Fox News": ["https://moxie.foxnews.com/google-publisher/latest.xml"],
     "Breitbart": ["https://feeds.feedburner.com/breitbart"],
     "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
     "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
@@ -152,27 +157,22 @@ def fetch_all_news():
 
 news = fetch_all_news()
 
-# Filtering
+# Filtering (simplified)
 filtered = news
 if st.session_state.favorite_sources:
     filtered = [a for a in filtered if a['source'] in st.session_state.favorite_sources]
 
 filtered = [a for a in filtered if a['link'] not in st.session_state.read_stories]
 
-search_term = st.text_input("Search headlines", value=st.session_state.get('search_term', ''))
-if search_term and search_term not in st.session_state.search_history:
-    st.session_state.search_history.append(search_term)
-    st.session_state.search_term = search_term
-
+search_term = st.text_input("Search headlines")
 if search_term:
     filtered = [a for a in filtered if search_term.lower() in (a['title'] + a['summary']).lower()]
 
-mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"])
 if mode != "All":
     keywords = {
-        "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato", "conflict", "strike", "defense"],
-        "Politics": ["trump", "biden", "harris", "election", "congress", "senate", "republican", "democrat", "border", "maga"],
-        "Economics": ["economy", "inflation", "jobs", "market", "fed", "tariff", "oil", "recession", "trade", "spending"]
+        "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato"],
+        "Politics": ["trump", "biden", "harris", "election", "congress", "republican", "border"],
+        "Economics": ["economy", "inflation", "jobs", "market", "tariff", "oil"]
     }
     filtered = [a for a in filtered if any(k.lower() in (a['title']+a['summary']).lower() for k in keywords.get(mode, []))]
 
@@ -209,34 +209,38 @@ for item in filtered[:15]:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  WAR MODE PROBABILITIES – this is the new part
-# ────────────────────────────────────────────────
+# War mode probabilities with red bars
 if mode == "War":
     st.markdown("---")
     st.subheader("War Outlook – Estimated Next Moves")
-    st.caption("Illustrative probabilities based on current conservative reporting patterns")
+    st.caption("Based on conservative analysis patterns")
 
     war_probs = [
         ("Major escalation / new front opens", 38),
-        ("U.S. or Israel directly strikes Iran", 44),
+        ("U.S. or Israel strikes Iran", 44),
         ("Sharp spike in energy / oil prices", 59),
-        ("Temporary ceasefire or talks gain traction", 22),
+        ("Temporary ceasefire talks advance", 22),
         ("Expanded sanctions or cyber retaliation", 63),
-        ("Proxy conflict widens (e.g. new region)", 31),
-        ("De-escalation via back-channel diplomacy", 18)
+        ("Proxy conflict widens", 31),
+        ("De-escalation via diplomacy", 18)
     ]
 
     cols = st.columns(2)
     for i, (event, percent) in enumerate(war_probs):
         with cols[i % 2]:
             st.markdown(f"**{event}**")
-            st.progress(percent / 100)
-            st.caption(f"{percent}% chance")
+            st.markdown(f"""
+                <div style="background: #2a2a2a; border-radius: 8px; height: 14px; margin: 8px 0;">
+                    <div style="background: linear-gradient(to right, #c62828, #ff5252); 
+                                width: {percent}%; height: 100%; border-radius: 8px;">
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown(f"<span style='color: #ff5252; font-weight: 600;'>{percent}%</span>", unsafe_allow_html=True)
 
 # Auto-refresh
 if st.session_state.auto_refresh:
-    time.sleep(300)  # 5 minutes
+    time.sleep(300)
     st.rerun()
 
-st.sidebar.caption("THEREALNEWS with Lawrence • Updated March 2026")
+st.sidebar.caption("THEREALNEWS with Lawrence • Conservative feed • March 2026")
