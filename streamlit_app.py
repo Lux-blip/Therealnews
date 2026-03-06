@@ -6,7 +6,7 @@ import os
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# Dark mode + card styling (smaller images, like/dislike buttons)
+# Dark mode + styling
 dark_mode = st.sidebar.toggle("🌙 Dark Mode", value=True)
 if dark_mode:
     st.markdown("""
@@ -28,82 +28,95 @@ if dark_mode:
 st.markdown("<h1 class='top-story-header'>THEREALNEWS with Lawrence</h1>", unsafe_allow_html=True)
 st.caption("Your Personalized Conservative Feed • Republican Sources Only")
 
-# Init session state for likes/dislikes & reset
+# Session state for likes/dislikes
 if 'preferences' not in st.session_state:
-    st.session_state.preferences = {}  # link -> score (+1 like, -1 dislike)
+    st.session_state.preferences = {}  # link -> score
 if 'reset_trigger' not in st.session_state:
     st.session_state.reset_trigger = 0
 
-# RSS sources
-RSS_FEEDS = { ... }  # Keep your full RSS_FEEDS dict here from previous code
+# Republican RSS sources
+RSS_FEEDS = {
+    "Fox News": [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml"
+    ],
+    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
+    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
+    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
+    "The Federalist": ["https://thefederalist.com/feed/"],
+    "Epoch Times": ["https://www.theepochtimes.com/feed"],
+    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
+    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
+    "National Review": ["https://www.nationalreview.com/feed"],
+    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
+}
 
-@st.cache_data(ttl=600) def fetch_all_news():
-    # Same as before - fetch, extract image, add pub_datetime, importance_score
-    # (copy the full fetch_all_news function from your last working version)
-    # For brevity: assume it returns list of dicts with 'link', 'title', 'summary', 'image', 'source', 'published', 'pub_datetime', 'importance_score'
+@st.cache_data(ttl=600)
+def fetch_all_news():
+    articles = []
+    now = datetime.utcnow()
+    one_day_ago = now - timedelta(days=1)
+    
+    for source, urls in RSS_FEEDS.items():
+        for url in urls:
+            try:
+                feed = feedparser.parse(url)
+                for entry in feed.entries[:12]:
+                    pub_parsed = entry.get('published_parsed') or entry.get('updated_parsed')
+                    if pub_parsed:
+                        pub_date = datetime(*pub_parsed[:6])
+                        if pub_date < one_day_ago:
+                            continue
+                        date_str = pub_date.strftime("%b %d %H:%M")
+                    else:
+                        date_str = "Recent"
+                    
+                    # Extract image
+                    img_url = None
+                    if 'media_content' in entry:
+                        for media in entry.media_content:
+                            if media.get('medium') == 'image' and 'url' in media:
+                                img_url = media['url']
+                                break
+                    if not img_url and 'media_thumbnail' in entry and entry.media_thumbnail:
+                        img_url = entry.media_thumbnail[0].get('url')
+                    if not img_url and 'enclosures' in entry:
+                        for enc in entry.enclosures:
+                            if 'image' in enc.get('type', ''):
+                                img_url = enc.get('href')
+                                break
+                    
+                    articles.append({
+                        'title': entry.get('title', 'No Title'),
+                        'summary': (entry.get('summary') or entry.get('description', 'No summary'))[:280] + '...',
+                        'link': entry.get('link', '#'),
+                        'published': date_str,
+                        'pub_datetime': pub_date if pub_parsed else now,
+                        'source': source,
+                        'image': img_url,
+                        'importance_score': len(entry.get('title', '')) + len(entry.get('summary', '')) * 0.5
+                    })
+            except Exception:
+                pass
+    
+    articles.sort(key=lambda x: x['pub_datetime'], reverse=True)
+    return articles
 
 all_articles = fetch_all_news()
 
-# Apply user preferences to boost/hide
+# Personalized priority
 def get_adjusted_priority(article):
     link = article['link']
     score = st.session_state.preferences.get(link, 0)
-    base = article['importance_score'] + (score * 1000)  # Like boosts a lot, dislike lowers
+    base = article['importance_score'] + (score * 1000)
     if score <= -1:
-        return -999999  # Hide disliked heavily
+        return -999999  # hide
     return base
 
-# Top Stories (boosted by prefs)
+# Top Stories
 st.subheader("🔥 Top Stories")
 sorted_top = sorted(all_articles[:30], key=get_adjusted_priority, reverse=True)[:5]
 for art in sorted_top:
-    with st.container():
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        if art['image']:
-            st.image(art['image'], use_column_width=False)  # smaller via CSS
-        st.markdown(f'<div class="title">[{art["title"]}]({art["link"]})</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="meta">📰 {art["source"]} • {art["published"]}</div>', unsafe_allow_html=True)
-        st.write(art['summary'])
-        
-        # Like / Dislike
-        cols = st.columns([1,1,8])
-        with cols[0]:
-            if st.button("👍 Like", key=f"like_{art['link']}", help="Show more like this", use_container_width=True):
-                st.session_state.preferences[art['link']] = st.session_state.preferences.get(art['link'], 0) + 1
-                st.rerun()
-        with cols[1]:
-            if st.button("👎 Dislike", key=f"dislike_{art['link']}", help="Show less like this", use_container_width=True):
-                st.session_state.preferences[art['link']] = st.session_state.preferences.get(art['link'], 0) - 1
-                st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
-st.divider()
-
-# Sidebar: Mode, Search, Reset
-mode = st.sidebar.selectbox("📡 Mode", ["War", "Politics", "Economics"])
-search_term = st.sidebar.text_input("🔍 Search", "")
-
-# Reset button - small & red
-if st.sidebar.button("Reset Algorithm", key="reset_alg", help="Clear all likes/dislikes", use_container_width=False):
-    st.session_state.preferences = {}
-    st.session_state.reset_trigger += 1
-    st.success("Algorithm reset! Preferences cleared.")
-    st.rerun()
-
-# Filter main feed (with prefs applied)
-mode_keywords = { ... }  # your keywords
-
-filtered = [a for a in all_articles if any(k.lower() in (a['title'].lower() + a['summary'].lower()) for k in mode_keywords.get(mode, []))]
-if search_term:
-    filtered = [a for a in filtered if search_term.lower() in (a['title'].lower() + a['summary'].lower())]
-
-# Sort main feed with prefs
-filtered.sort(key=get_adjusted_priority, reverse=True)
-
-st.write(f"**{len(filtered)} stories** in **{mode}** mode • Personalized by your likes/dislikes")
-
-for art in filtered[:15]:  # limit to avoid overload
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
         if art['image']:
@@ -112,15 +125,84 @@ for art in filtered[:15]:  # limit to avoid overload
         st.markdown(f'<div class="meta">📰 {art["source"]} • {art["published"]}</div>', unsafe_allow_html=True)
         st.write(art['summary'])
         
-        cols = st.columns([1,1,8])
+        cols = st.columns([1, 1, 8])
         with cols[0]:
-            st.button("👍 Like", key=f"like_main_{art['link']}", help="Boost this type")
+            if st.button("👍 Like", key=f"like_top_{art['link']}"):
+                st.session_state.preferences[art['link']] = st.session_state.preferences.get(art['link'], 0) + 1
+                st.rerun()
         with cols[1]:
-            st.button("👎 Dislike", key=f"dislike_main_{art['link']}", help="Reduce this type")
+            if st.button("👎 Dislike", key=f"dislike_top_{art['link']}"):
+                st.session_state.preferences[art['link']] = st.session_state.preferences.get(art['link'], 0) - 1
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+st.divider()
+
+# Sidebar controls
+mode = st.sidebar.selectbox("📡 Mode", ["War", "Politics", "Economics"])
+search_term = st.sidebar.text_input("🔍 Search", "")
+
+if st.sidebar.button("Reset Algorithm", help="Clear all likes/dislikes"):
+    st.session_state.preferences = {}
+    st.success("Algorithm reset!")
+    st.rerun()
+
+# Filter & sort main feed
+mode_keywords = {
+    "Politics": ["trump", "maga", "gop", "republican", "border", "election", "harris", "congress"],
+    "Economics": ["economy", "inflation", "jobs", "market", "fed", "tariff", "energy", "oil"],
+    "War": ["war", "ukraine", "russia", "israel", "gaza", "iran", "china", "military", "nato", "strike"]
+}
+
+filtered = [
+    a for a in all_articles
+    if any(k.lower() in (a['title'].lower() + a['summary'].lower()) for k in mode_keywords.get(mode, []))
+]
+
+if search_term:
+    filtered = [
+        a for a in filtered
+        if search_term.lower() in (a['title'].lower() + a['summary'].lower())
+    ]
+
+filtered.sort(key=get_adjusted_priority, reverse=True)
+
+st.write(f"**{len(filtered)} stories** in **{mode}** mode • Personalized")
+
+for art in filtered[:15]:
+    with st.container():
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        if art['image']:
+            st.image(art['image'], use_column_width=False)
+        st.markdown(f'<div class="title">[{art["title"]}]({art["link"]})</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="meta">📰 {art["source"]} • {art["published"]}</div>', unsafe_allow_html=True)
+        st.write(art['summary'])
+        
+        cols = st.columns([1, 1, 8])
+        with cols[0]:
+            st.button("👍 Like", key=f"like_{art['link']}")
+        with cols[1]:
+            st.button("👎 Dislike", key=f"dislike_{art['link']}")
         
         st.markdown('</div>', unsafe_allow_html=True)
 
-# War mode extras (keep as-is)
+# War mode section
+if mode == "War":
+    st.divider()
+    st.subheader("🔥 War Outlook")
+    scenarios = [
+        ("Major escalation/new front", 34),
+        ("U.S./Israel strikes Iran", 48),
+        ("Energy prices spike", 57),
+        ("Ceasefire progress", 25),
+        ("Sanctions/cyber retaliation", 61)
+    ]
+    cols = st.columns(2)
+    for i, (event, prob) in enumerate(scenarios):
+        with cols[i % 2]:
+            st.write(f"**{event}**")
+            st.progress(prob / 100)
+            st.caption(f"{prob}%")
 
 with st.sidebar:
-    st.caption("THEREALNEWS with Lawrence • Your Feed • Likes shape what you see more")
+    st.caption("THEREALNEWS with Lawrence • Your Feed")
