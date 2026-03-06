@@ -6,7 +6,9 @@ import time
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# Persistent settings
+# ────────────────────────────────────────────────
+# Persistent settings – must be first
+# ────────────────────────────────────────────────
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 if 'font_size' not in st.session_state:
@@ -26,66 +28,98 @@ if 'loaded_count' not in st.session_state:
 if 'x_menu_open' not in st.session_state:
     st.session_state.x_menu_open = False
 
+# ────────────────────────────────────────────────
+# RSS_FEEDS – defined VERY EARLY so sidebar can use .keys()
+# ────────────────────────────────────────────────
+RSS_FEEDS = {
+    "Fox News": [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/politics.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml"
+    ],
+    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
+    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
+    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
+    "The Federalist": ["https://thefederalist.com/feed/"],
+    "Epoch Times": ["https://www.theepochtimes.com/feed"],
+    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
+    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
+    "National Review": ["https://www.nationalreview.com/feed"],
+    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
+}
+
+# ────────────────────────────────────────────────
 # Font sizes
+# ────────────────────────────────────────────────
 font_sizes = {
     "Small": {"title": "1.2rem", "meta": "0.85rem", "summary": "0.92rem"},
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
     "Large": {"title": "1.6rem", "meta": "1.05rem", "summary": "1.08rem"}
 }
 
-# Mode colors – "All" is now strict black & white
+# ────────────────────────────────────────────────
+# Mode colors
+# ────────────────────────────────────────────────
 mode_colors = {
-    "All": {"accent": "#ffffff", "header": "#ffffff", "bg": "#000000", "text": "#ffffff", "border": "#444444"},
-    "War": {"accent": "#c62828", "header": "#ff4d4d", "bg": "#0e1117", "text": "#e0e0ff", "border": "#30363d"},
-    "Politics": {"accent": "#1976d2", "header": "#2196f3", "bg": "#0e1117", "text": "#e0e0ff", "border": "#30363d"},
-    "Economics": {"accent": "#ffb300", "header": "#ffca28", "bg": "#0e1117", "text": "#e0e0ff", "border": "#30363d"}
+    "All": {"accent": "#ff4d4d", "header": "#ff4d4d"},
+    "War": {"accent": "#c62828", "header": "#ff4d4d"},
+    "Politics": {"accent": "#1976d2", "header": "#2196f3"},
+    "Economics": {"accent": "#ffb300", "header": "#ffca28"}
 }
 
-# Select mode EARLY
+# ────────────────────────────────────────────────
+# Select mode EARLY – before any CSS or sidebar
+# ────────────────────────────────────────────────
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"], index=0)
 colors = mode_colors.get(mode, mode_colors["All"])
 
-# Dynamic styling – black/white for "All", dark mode for others
-st.markdown(f"""
-    <style>
-        [data-testid="stAppViewContainer"] {{ background-color: {colors['bg']} !important; }}
-        section[data-testid="stSidebar"] {{ background-color: {colors['bg']} !important; }}
-        .stApp {{ background-color: {colors['bg']} !important; color: {colors['text']} !important; }}
-        .card {{ background: {colors['bg']}; border: 1px solid {colors['border']}; color: {colors['text']}; border-radius: 10px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); position: relative; }}
-        .card img {{ width: 100%; height: auto; display: block; }}
-        .gradient-overlay {{ position: absolute; bottom: 0; left: 0; right: 0; padding: 100px 24px 24px; background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.65) 40%, transparent 100%); color: white; }}
-        .card-title {{ font-size: {fs['title']}; font-weight: 700; margin: 0 0 8px 0; line-height: 1.3; }}
-        .card-meta {{ font-size: {fs['meta']}; color: #ccc; margin-bottom: 14px; }}
-        .summary {{ font-size: {fs['summary']}; color: #ddd; margin: 10px 0 16px 0; }}
-        .btn {{ background: {colors['accent']} !important; color: white !important; border: none !important; padding: 9px 18px !important; border-radius: 6px !important; font-weight: 600 !important; margin-right: 12px !important; cursor: pointer; font-size: 0.95rem !important; }}
-        .btn-like {{ background: #4caf50 !important; }}
-        .btn-dislike {{ background: #e53935 !important; }}
-        .btn-reset {{ background: #c62828 !important; font-size: 0.88rem !important; padding: 6px 16px !important; margin-top: 8px; }}
-        .badge {{ padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; color: white; margin-left: 8px; background: {colors['accent']}; }}
-        hr {{ border-color: {colors['border']}; margin: 48px 0 64px 0; }}
-        .x-float-btn {{ 
-            position: fixed; right: 30px; bottom: 40px; z-index: 999;
-            background: {colors['accent']}; color: white; border: none; border-radius: 50%; 
-            width: 60px; height: 60px; font-size: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
-        }}
-        .x-float-btn:hover {{ transform: scale(1.1); }}
-    </style>
-""", unsafe_allow_html=True)
+# ────────────────────────────────────────────────
+# Dynamic styling
+# ────────────────────────────────────────────────
+fs = font_sizes[st.session_state.font_size]
+if st.session_state.dark_mode:
+    st.markdown(f"""
+        <style>
+            [data-testid="stAppViewContainer"] {{ background-color: #0e1117 !important; }}
+            section[data-testid="stSidebar"] {{ background-color: #161b22 !important; }}
+            .stApp {{ background-color: #0e1117 !important; color: #e0e0ff !important; }}
+            .card {{ background: #161b22; border: 1px solid #30363d; color: white; border-radius: 10px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); position: relative; }}
+            .card img {{ width: 100%; height: auto; display: block; }}
+            .gradient-overlay {{ position: absolute; bottom: 0; left: 0; right: 0; padding: 100px 24px 24px; background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.65) 40%, transparent 100%); color: white; }}
+            .card-title {{ font-size: {fs['title']}; font-weight: 700; margin: 0 0 8px 0; line-height: 1.3; }}
+            .card-meta {{ font-size: {fs['meta']}; color: #ccc; margin-bottom: 14px; }}
+            .summary {{ font-size: {fs['summary']}; color: #ddd; margin: 10px 0 16px 0; }}
+            .btn {{ background: {colors['accent']} !important; color: white !important; border: none !important; padding: 9px 18px !important; border-radius: 6px !important; font-weight: 600 !important; margin-right: 12px !important; cursor: pointer; font-size: 0.95rem !important; }}
+            .btn-like {{ background: #4caf50 !important; }}
+            .btn-dislike {{ background: #e53935 !important; }}
+            .btn-reset {{ background: #c62828 !important; font-size: 0.88rem !important; padding: 6px 16px !important; margin-top: 8px; }}
+            .badge {{ padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; color: white; margin-left: 8px; }}
+            hr {{ border-color: #444; margin: 48px 0 64px 0; }}
+            .x-float-btn {{ 
+                position: fixed; right: 30px; bottom: 40px; z-index: 999;
+                background: {colors['accent']}; color: white; border: none; border-radius: 50%; 
+                width: 60px; height: 60px; font-size: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                cursor: pointer; display: flex; align-items: center; justify-content: center;
+                transition: all 0.2s;
+            }}
+            .x-float-btn:hover {{ transform: scale(1.1); }}
+        </style>
+    """, unsafe_allow_html=True)
 
-# Header
+# Header with mode color
 st.markdown(f'<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:{colors["header"]};">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# Floating X button – colored by mode
+# ────────────────────────────────────────────────
+# Floating X button – colored by mode, opens menu
+# ────────────────────────────────────────────────
 st.markdown(f'<div class="x-float-btn" onclick="document.getElementById(\'x_menu_trigger\').click()">𝕏</div>', unsafe_allow_html=True)
 
 if st.button("𝕏", key="x_menu_trigger", help="Open X menu"):
     st.session_state.x_menu_open = not st.session_state.x_menu_open
     st.rerun()
 
-# X side menu
+# X side menu (opens when button clicked)
 if st.session_state.x_menu_open:
     with st.sidebar:
         st.subheader("X (Twitter) Integration")
@@ -101,12 +135,15 @@ if st.session_state.x_menu_open:
         st.markdown("**Share current story or feed to X**")
         if st.button("Share this feed to X"):
             st.toast("Link copied – paste into X!")
+            st.info("Current page link would be copied here in full version")
 
         if st.button("Close X Menu"):
             st.session_state.x_menu_open = False
             st.rerun()
 
-# Sidebar controls
+# ────────────────────────────────────────────────
+# Sidebar – main controls
+# ────────────────────────────────────────────────
 with st.sidebar:
     st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
@@ -139,7 +176,9 @@ with st.sidebar:
     st.markdown("**Daily Thought**")
     st.caption(random.choice(quotes))
 
+# ────────────────────────────────────────────────
 # Fetch news
+# ────────────────────────────────────────────────
 @st.cache_data(ttl=600)
 def fetch_all_news():
     articles = []
