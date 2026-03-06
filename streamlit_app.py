@@ -21,6 +21,8 @@ if 'auto_refresh' not in st.session_state:
     st.session_state.auto_refresh = False
 if 'favorite_sources' not in st.session_state:
     st.session_state.favorite_sources = set()
+if 'loaded_count' not in st.session_state:
+    st.session_state.loaded_count = 15
 
 # Font sizes
 font_sizes = {
@@ -28,8 +30,9 @@ font_sizes = {
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
     "Large": {"title": "1.6rem", "meta": "1.05rem", "summary": "1.08rem"}
 }
+fs = font_sizes[st.session_state.font_size]
 
-# Mode colors – defined early
+# Mode colors
 mode_colors = {
     "All": {"accent": "#ff4d4d", "header": "#ff4d4d"},
     "War": {"accent": "#c62828", "header": "#ff4d4d"},
@@ -37,14 +40,11 @@ mode_colors = {
     "Economics": {"accent": "#ffb300", "header": "#ffca28"}
 }
 
-# Select mode FIRST (before CSS)
+# Select mode FIRST
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"], index=0)
-
-# Get colors for current mode
 colors = mode_colors.get(mode, mode_colors["All"])
 
-# Dynamic styling (now safe because mode is defined)
-fs = font_sizes[st.session_state.font_size]
+# Dynamic styling
 if st.session_state.dark_mode:
     st.markdown(f"""
         <style>
@@ -61,15 +61,16 @@ if st.session_state.dark_mode:
             .btn-like {{ background: #4caf50 !important; }}
             .btn-dislike {{ background: #e53935 !important; }}
             .btn-reset {{ background: #c62828 !important; font-size: 0.88rem !important; padding: 6px 16px !important; margin-top: 8px; }}
+            .badge {{ padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; color: white; margin-left: 8px; }}
             hr {{ border-color: #444; margin: 48px 0 64px 0; }}
         </style>
     """, unsafe_allow_html=True)
 
-# Header with mode color
+# Header
 st.markdown(f'<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:{colors["header"]};">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# Sidebar controls
+# Sidebar
 with st.sidebar:
     st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
@@ -77,7 +78,7 @@ with st.sidebar:
     st.session_state.auto_refresh = st.checkbox("Auto-refresh every 5 min", value=st.session_state.auto_refresh)
 
     st.subheader("Favorite Sources")
-    sources = ["Fox News", "Breitbart", "Newsmax", "Daily Wire", "The Federalist", "Epoch Times", "OANN", "Washington Examiner", "National Review", "The Blaze"]
+    sources = list(RSS_FEEDS.keys())
     selected = st.multiselect("Select sources", sources, default=list(st.session_state.favorite_sources))
     st.session_state.favorite_sources = set(selected)
 
@@ -135,7 +136,16 @@ def fetch_all_news():
                     pub_date = datetime(*pub_parsed[:6]) if pub_parsed else now
                     if pub_date < one_day_ago:
                         continue
-                    date_str = pub_date.strftime("%b %d %H:%M")
+
+                    # Relative time
+                    delta = now - pub_date
+                    if delta.days == 0:
+                        hours = delta.seconds // 3600
+                        time_str = f"{hours}h ago" if hours > 0 else "Just now"
+                    elif delta.days == 1:
+                        time_str = "Yesterday"
+                    else:
+                        time_str = pub_date.strftime("%b %d")
 
                     img = None
                     if 'media_content' in entry:
@@ -148,7 +158,7 @@ def fetch_all_news():
                         'title': entry.get('title', 'No title'),
                         'summary': (entry.get('summary') or entry.get('description', ''))[:240] + '...',
                         'link': entry.get('link', '#'),
-                        'published': date_str,
+                        'published': time_str,
                         'pub_dt': pub_date,
                         'source': source,
                         'image': img,
@@ -188,7 +198,9 @@ if mode != "All":
 # Display feed
 st.subheader(f"{mode} Feed – {len(filtered)} stories")
 
-for item in filtered[:15]:
+displayed = filtered[:st.session_state.loaded_count]
+
+for item in displayed:
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
 
@@ -199,12 +211,14 @@ for item in filtered[:15]:
             st.markdown('<div style="height:220px; background:#1e1e2e;"></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+        badge_color = mode_colors.get(mode, mode_colors["All"])["accent"]
         st.markdown(f"""
             <div class="gradient-overlay">
                 <div class="card-title">
                     <a href="{item['link']}" target="_blank" style="color:white; text-decoration:none;">
                         {item['title']}
                     </a>
+                    <span class="badge" style="background:{badge_color};">{mode}</span>
                 </div>
                 <div class="card-meta">📰 {item['source']} • {item['published']}</div>
                 <p class="summary">{item['summary']}</p>
@@ -212,11 +226,22 @@ for item in filtered[:15]:
                     <a href="{item['link']}" target="_blank">
                         <button class="btn">Read Article</button>
                     </a>
+                    <button class="btn btn-like" onclick="alert('Liked!')">👍 Like</button>
+                    <button class="btn btn-dislike" onclick="alert('Disliked!')">👎 Dislike</button>
+                    <button onclick="navigator.clipboard.writeText('{item['link']}'); alert('Link copied!')">Share</button>
+                    <button onclick="alert('Marked as read')">Mark Read</button>
+                    <button onclick="alert('Saved')">Save</button>
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
+
+# Load More
+if len(filtered) > st.session_state.loaded_count:
+    if st.button("Load 10 More"):
+        st.session_state.loaded_count += 10
+        st.rerun()
 
 # War mode probabilities – red bars
 if mode == "War":
