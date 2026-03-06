@@ -9,78 +9,88 @@ st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", lay
 # ────────────────────────────────────────────────
 st.markdown("""
     <style>
-        .stApp {
-            background-color: #f8f5f0;
-            color: #1a1a1a;
-            font-family: Georgia, 'Times New Roman', serif;
-        }
-        .title-main {
-            font-size: 3.4rem;
-            font-weight: bold;
-            text-align: center;
-            color: #b71c1c;
-            margin: 20px 0 0 0;
-            letter-spacing: -1px;
-        }
-        .subtitle {
-            text-align: center;
-            font-size: 1.4rem;
-            color: #444;
-            margin-top: -12px;
-        }
-        .card {
-            background: white;
-            border: 1px solid #d0d0d0;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 32px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        .card img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        .gradient-bottom {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 80px 20px 16px;
-            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 100%);
-            color: white;
-        }
-        .card-title {
-            font-size: 1.38rem;
-            font-weight: 700;
-            margin: 0 0 6px 0;
-            line-height: 1.28;
-        }
-        .card-meta {
-            font-size: 0.94rem;
-            opacity: 0.92;
-            margin-bottom: 10px;
-        }
-        .btn {
-            background: #b71c1c !important;
-            color: white !important;
-            border: none !important;
-            padding: 8px 16px !important;
-            border-radius: 5px !important;
-            font-weight: 600 !important;
-            margin-right: 10px !important;
-            cursor: pointer;
-        }
-        .btn-like { background: #2e7d32 !important; }
-        .btn-dislike { background: #c62828 !important; }
-        .btn-reset { 
-            background: #d32f2f !important; 
-            font-size: 0.9rem !important;
-            padding: 6px 14px !important;
-        }
-        hr { border-color: #aaa; margin: 32px 0; }
-    </style>
+    .stApp {
+        background-color: #f8f5f0;
+        color: #1a1a1a;
+        font-family: Georgia, 'Times New Roman', serif;
+    }
+    .title-main {
+        font-size: 3.4rem;
+        font-weight: bold;
+        text-align: center;
+        color: #b71c1c;
+        margin: 20px 0 0 0;
+        letter-spacing: -1px;
+    }
+    .subtitle {
+        text-align: center;
+        font-size: 1.4rem;
+        color: #444;
+        margin-top: -12px;
+    }
+    .card {
+        background: white;
+        border: 1px solid #d0d0d0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 40px !important;      /* increased from 32px → more breathing room */
+        box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+        position: relative;
+        min-height: 320px;                    /* prevents very short cards from collapsing */
+    }
+    .card:last-child {
+        margin-bottom: 80px !important;       /* extra space after the very last card */
+    }
+    .card img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+    .gradient-bottom {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 80px 20px 20px;              /* more padding at bottom */
+        background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 100%);
+        color: white;
+    }
+    .card-title {
+        font-size: 1.38rem;
+        font-weight: 700;
+        margin: 0 0 6px 0;
+        line-height: 1.28;
+    }
+    .card-meta {
+        font-size: 0.94rem;
+        opacity: 0.92;
+        margin-bottom: 10px;
+    }
+    .btn {
+        background: #b71c1c !important;
+        color: white !important;
+        border: none !important;
+        padding: 8px 16px !important;
+        border-radius: 5px !important;
+        font-weight: 600 !important;
+        margin-right: 10px !important;
+        cursor: pointer;
+    }
+    .btn-like { background: #2e7d32 !important; }
+    .btn-dislike { background: #c62828 !important; }
+    .btn-reset { 
+        background: #d32f2f !important; 
+        font-size: 0.9rem !important;
+        padding: 6px 14px !important;
+    }
+    hr {
+        border-color: #aaa;
+        margin: 48px 0 64px 0;               /* more space around dividers */
+    }
+    .stContainer {
+        margin-bottom: 32px !important;       /* extra safeguard */
+    }
+</style>
 """, unsafe_allow_html=True)
 
 # ────────────────────────────────────────────────
