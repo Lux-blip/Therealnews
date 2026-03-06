@@ -7,7 +7,7 @@ import time
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
 # ────────────────────────────────────────────────
-# Persistent settings
+# Persistent settings (must come first)
 # ────────────────────────────────────────────────
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
@@ -29,6 +29,26 @@ if 'x_menu_open' not in st.session_state:
     st.session_state.x_menu_open = False
 
 # ────────────────────────────────────────────────
+# RSS feeds – defined EARLY so sidebar can use it
+# ────────────────────────────────────────────────
+RSS_FEEDS = {
+    "Fox News": [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/politics.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml"
+    ],
+    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
+    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
+    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
+    "The Federalist": ["https://thefederalist.com/feed/"],
+    "Epoch Times": ["https://www.theepochtimes.com/feed"],
+    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
+    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
+    "National Review": ["https://www.nationalreview.com/feed"],
+    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
+}
+
+# ────────────────────────────────────────────────
 # Font sizes
 # ────────────────────────────────────────────────
 font_sizes = {
@@ -36,7 +56,6 @@ font_sizes = {
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
     "Large": {"title": "1.6rem", "meta": "1.05rem", "summary": "1.08rem"}
 }
-fs = font_sizes[st.session_state.font_size]
 
 # ────────────────────────────────────────────────
 # Mode colors
@@ -48,13 +67,16 @@ mode_colors = {
     "Economics": {"accent": "#ffb300", "header": "#ffca28"}
 }
 
-# Select mode EARLY
+# ────────────────────────────────────────────────
+# Select mode EARLY (before CSS)
+# ────────────────────────────────────────────────
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"], index=0)
 colors = mode_colors.get(mode, mode_colors["All"])
 
 # ────────────────────────────────────────────────
-# Dynamic styling (dark mode + mode accents)
+# Dynamic styling
 # ────────────────────────────────────────────────
+fs = font_sizes[st.session_state.font_size]
 if st.session_state.dark_mode:
     st.markdown(f"""
         <style>
@@ -88,23 +110,20 @@ st.markdown(f'<div style="font-size:3.5rem; font-weight:bold; text-align:center;
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
 # ────────────────────────────────────────────────
-# X Integration – floating button + side menu
+# X floating button
 # ────────────────────────────────────────────────
-if st.button("𝕏", help="Open X menu", key="x_float", use_container_width=False):
+st.markdown('<div class="x-float-btn">𝕏</div>', unsafe_allow_html=True)
+if st.button("𝕏", help="Open X menu", key="x_float_btn"):
     st.session_state.x_menu_open = not st.session_state.x_menu_open
 
-# Floating X button
-st.markdown('<div class="x-float-btn">𝕏</div>', unsafe_allow_html=True)
-
-# Side menu when open
+# X side menu
 if st.session_state.x_menu_open:
     with st.sidebar:
         st.subheader("X (Twitter) Integration")
         x_query = st.text_input("Search X for...", value=f"{mode} news conservative")
         if st.button("Search X"):
-            st.info(f"Searching X for: {x_query}... (demo – real integration would show posts here)")
-            # In real app you would call X search API here
-
+            st.info(f"Searching X for: {x_query}... (real integration would show posts here)")
+        
         st.markdown("**Recent conservative voices**")
         conservative_accounts = ["@realDonaldTrump", "@FoxNews", "@BreitbartNews", "@NEWSMAX", "@DailyWire", "@OANN"]
         for acc in conservative_accounts:
@@ -113,7 +132,6 @@ if st.session_state.x_menu_open:
         st.markdown("**Share current page to X**")
         if st.button("Post this feed to X"):
             st.toast("Link copied – paste into X!")
-            st.info("Current feed link would be copied here in full version")
 
         if st.button("Close X Menu"):
             st.session_state.x_menu_open = False
@@ -154,24 +172,9 @@ with st.sidebar:
     st.markdown("**Daily Thought**")
     st.caption(random.choice(quotes))
 
-# RSS feeds
-RSS_FEEDS = {
-    "Fox News": [
-        "https://moxie.foxnews.com/google-publisher/latest.xml",
-        "https://moxie.foxnews.com/google-publisher/politics.xml",
-        "https://moxie.foxnews.com/google-publisher/world.xml"
-    ],
-    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
-    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
-    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
-    "The Federalist": ["https://thefederalist.com/feed/"],
-    "Epoch Times": ["https://www.theepochtimes.com/feed"],
-    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
-    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
-    "National Review": ["https://www.nationalreview.com/feed"],
-    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
-}
-
+# ────────────────────────────────────────────────
+# Fetch news
+# ────────────────────────────────────────────────
 @st.cache_data(ttl=600)
 def fetch_all_news():
     articles = []
@@ -187,6 +190,8 @@ def fetch_all_news():
                     pub_date = datetime(*pub_parsed[:6]) if pub_parsed else now
                     if pub_date < one_day_ago:
                         continue
+
+                    # Relative time
                     delta = now - pub_date
                     if delta.days == 0:
                         hours = delta.seconds // 3600
@@ -275,11 +280,6 @@ for item in displayed:
                     <a href="{item['link']}" target="_blank">
                         <button class="btn">Read Article</button>
                     </a>
-                    <button class="btn btn-like" onclick="alert('Liked!')">👍 Like</button>
-                    <button class="btn btn-dislike" onclick="alert('Disliked!')">👎 Dislike</button>
-                    <button onclick="navigator.clipboard.writeText('{item['link']}'); alert('Link copied!')">Share</button>
-                    <button onclick="alert('Marked as read')">Mark Read</button>
-                    <button onclick="alert('Saved')">Save</button>
                 </div>
             </div>
         """, unsafe_allow_html=True)
