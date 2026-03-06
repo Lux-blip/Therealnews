@@ -1,195 +1,294 @@
 import streamlit as st
 import feedparser
-import requests
 from datetime import datetime, timedelta
-import os
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# Newspaper-inspired styling
-dark_mode = st.sidebar.toggle("🌙 Dark Mode", value=False)
-if dark_mode:
-    bg_color = "#0e1117"
-    card_bg = "#1e1e2e"
-    text_color = "#e0e0ff"
-    accent = "#c62828"
-    gradient = "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 100%)"
-else:
-    bg_color = "#f8f5f0"           # light paper/off-white
-    card_bg = "#ffffff"
-    text_color = "#1a1a1a"
-    accent = "#b71c1c"
-    gradient = "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 100%)"
-
-st.markdown(f"""
+# ────────────────────────────────────────────────
+#  Styling – newspaper + gradient cards
+# ────────────────────────────────────────────────
+st.markdown("""
     <style>
-        .stApp {{
-            background-color: {bg_color};
-            color: {text_color};
-            font-family: 'Georgia', 'Times New Roman', serif;
-        }}
-        h1, h2, h3 {{
-            font-family: 'Georgia', serif;
-            color: {accent} !important;
-        }}
-        .newspaper-title {{
-            font-size: 3.2rem;
+        .stApp {
+            background-color: #f8f5f0;
+            color: #1a1a1a;
+            font-family: Georgia, 'Times New Roman', serif;
+        }
+        .title-main {
+            font-size: 3.4rem;
             font-weight: bold;
             text-align: center;
-            margin: 20px 0 8px;
+            color: #b71c1c;
+            margin: 20px 0 0 0;
             letter-spacing: -1px;
-            color: {accent};
-        }}
-        .card {{
-            background-color: {card_bg};
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.4rem;
+            color: #444;
+            margin-top: -12px;
+        }
+        .card {
+            background: white;
             border: 1px solid #d0d0d0;
             border-radius: 8px;
             overflow: hidden;
-            margin-bottom: 28px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            margin-bottom: 32px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
             position: relative;
-        }}
-        .card img {{
+        }
+        .card img {
             width: 100%;
             height: auto;
             display: block;
-        }}
-        .card-gradient {{
+        }
+        .gradient-bottom {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 24px 20px 16px;
-            background: {gradient};
+            padding: 80px 20px 16px;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 100%);
             color: white;
-        }}
-        .card-title {{
-            font-size: 1.35rem;
+        }
+        .card-title {
+            font-size: 1.38rem;
             font-weight: 700;
             margin: 0 0 6px 0;
-            line-height: 1.25;
-        }}
-        .card-meta {{
-            font-size: 0.92rem;
-            opacity: 0.9;
+            line-height: 1.28;
+        }
+        .card-meta {
+            font-size: 0.94rem;
+            opacity: 0.92;
             margin-bottom: 10px;
-        }}
-        .action-btn {{
-            background-color: {accent} !important;
+        }
+        .btn {
+            background: #b71c1c !important;
             color: white !important;
             border: none !important;
             padding: 8px 16px !important;
-            border-radius: 6px !important;
+            border-radius: 5px !important;
             font-weight: 600 !important;
             margin-right: 10px !important;
-        }}
-        .like-btn {{
-            background-color: #388e3c !important;
-        }}
-        .dislike-btn {{
-            background-color: #d32f2f !important;
-        }}
-        .reset-btn {{
-            background-color: #c62828 !important;
-            font-size: 0.85rem !important;
+            cursor: pointer;
+        }
+        .btn-like { background: #2e7d32 !important; }
+        .btn-dislike { background: #c62828 !important; }
+        .btn-reset { 
+            background: #d32f2f !important; 
+            font-size: 0.9rem !important;
             padding: 6px 14px !important;
-        }}
+        }
+        hr { border-color: #aaa; margin: 32px 0; }
     </style>
 """, unsafe_allow_html=True)
 
-# Header — newspaper style
-st.markdown('<div class="newspaper-title">THEREALNEWS</div>', unsafe_allow_html=True)
-st.markdown('<p style="text-align:center; font-size:1.3rem; margin-top:-10px; color:#555;">with Lawrence</p>', unsafe_allow_html=True)
-st.caption("Unfiltered • Conservative • Republican Perspective", help="Curated from trusted right-leaning sources")
+# ────────────────────────────────────────────────
+#  Header
+# ────────────────────────────────────────────────
+st.markdown('<div class="title-main">THEREALNEWS</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">with Lawrence</div>', unsafe_allow_html=True)
+st.caption("Conservative perspective • Republican-leaning sources", help="Fox, Breitbart, Newsmax, Daily Wire, OANN, Epoch Times, etc.")
 
-# Session state
-if 'preferences' not in st.session_state:
-    st.session_state.preferences = {}
-if 'reset_trigger' not in st.session_state:
-    st.session_state.reset_trigger = 0
+# ────────────────────────────────────────────────
+#  Session state for likes/dislikes
+# ────────────────────────────────────────────────
+if 'prefs' not in st.session_state:
+    st.session_state.prefs = {}          # link → +1 like / -1 dislike
 
-# (Keep your RSS_FEEDS dict here – same as before)
+# ────────────────────────────────────────────────
+#  RSS sources (Republican / conservative)
+# ────────────────────────────────────────────────
+RSS_FEEDS = {
+    "Fox News": [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/politics.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml"
+    ],
+    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
+    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
+    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
+    "The Federalist": ["https://thefederalist.com/feed/"],
+    "Epoch Times": ["https://www.theepochtimes.com/feed"],
+    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
+    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
+    "National Review": ["https://www.nationalreview.com/feed"],
+    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
+}
 
+# ────────────────────────────────────────────────
+#  Fetch function – always returns list
+# ────────────────────────────────────────────────
 @st.cache_data(ttl=600)
 def fetch_all_news():
-    # (Keep your full fetch_all_news function from the previous working version)
-    # Make sure it returns articles with 'image', 'title', 'summary', 'link', 'source', 'published', 'pub_datetime', 'importance_score'
-    pass  # ← paste your fetch function body here
+    articles = []
+    now = datetime.utcnow()
+    one_day_ago = now - timedelta(days=1)
 
-all_articles = fetch_all_news()
-st.write(f"Loaded {len(all_articles)} articles")
-def get_adjusted_priority(article):
-    link = article['link']
-    score = st.session_state.preferences.get(link, 0)
-    base = article['importance_score'] + score * 1200
-    if score <= -1:
-        return -999999
-    return base
+    for source, urls in RSS_FEEDS.items():
+        for url in urls:
+            try:
+                feed = feedparser.parse(url)
+                for entry in feed.entries[:10]:
+                    pub_parsed = entry.get('published_parsed') or entry.get('updated_parsed')
+                    pub_date = None
+                    date_str = "Recent"
 
-# Top Stories
-st.subheader("Top Stories")
-sorted_top = sorted(all_articles[:30], key=get_adjusted_priority, reverse=True)[:4]
+                    if pub_parsed:
+                        try:
+                            pub_date = datetime(*pub_parsed[:6])
+                            if pub_date < one_day_ago:
+                                continue
+                            date_str = pub_date.strftime("%b %d %H:%M")
+                        except:
+                            pass
 
-for art in sorted_top:
-    with st.container():
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        
-        if art['image']:
-            st.image(art['image'], use_column_width=True)
-        else:
-            st.markdown('<div style="height:180px; background:#444;"></div>', unsafe_allow_html=True)
-        
-        st.markdown(f"""
-            <div class="card-gradient">
-                <div class="card-title"><a href="{art['link']}" target="_blank" style="color:white; text-decoration:none;">{art['title']}</a></div>
-                <div class="card-meta">📰 {art['source']} • {art['published']}</div>
-                
-                <div style="margin-top:12px;">
-                    <button class="action-btn like-btn" onclick="parent.window.location.href='{art['link']}'">Read Article</button>
-                    <button class="action-btn like-btn">👍 Like</button>
-                    <button class="action-btn dislike-btn">👎 Dislike</button>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+                    # Image
+                    img = None
+                    if 'media_content' in entry:
+                        for m in entry.media_content:
+                            if m.get('medium') == 'image' and 'url' in m:
+                                img = m['url']
+                                break
+                    if not img and 'media_thumbnail' in entry and entry.media_thumbnail:
+                        img = entry.media_thumbnail[0].get('url')
 
-st.divider()
+                    articles.append({
+                        'title': entry.get('title', 'No title'),
+                        'summary': (entry.get('summary') or entry.get('description', ''))[:240] + '...',
+                        'link': entry.get('link', '#'),
+                        'published': date_str,
+                        'pub_dt': pub_date if pub_date else now,
+                        'source': source,
+                        'image': img,
+                        'score': len(entry.get('title','')) + len(entry.get('summary','')) * 0.6
+                    })
+            except:
+                pass
 
-# Sidebar
-mode = st.sidebar.selectbox("Section", ["War", "Politics", "Economics"])
-search_term = st.sidebar.text_input("Search headlines")
+    articles.sort(key=lambda x: x['pub_dt'], reverse=True)
+    return articles
 
-if st.sidebar.button("Reset Algorithm", help="Clear likes & dislikes", key="reset_alg"):
-    st.session_state.preferences = {}
-    st.success("Preferences reset")
+# Load news
+news = fetch_all_news()
+
+# ────────────────────────────────────────────────
+#  Sidebar controls
+# ────────────────────────────────────────────────
+mode = st.sidebar.selectbox("Section", ["All", "War", "Politics", "Economics"])
+
+if st.sidebar.button("Reset likes/dislikes", help="Clear personalization", key="reset"):
+    st.session_state.prefs = {}
+    st.success("Preferences cleared")
     st.rerun()
 
-# Main feed (same filtering + personalization logic as before)
-# ... (add your mode_keywords, filtering, sorting code here)
+# ────────────────────────────────────────────────
+#  Simple personalization
+# ────────────────────────────────────────────────
+def priority(article):
+    link = article['link']
+    val = st.session_state.prefs.get(link, 0)
+    return article['score'] + val * 1500 if val >= 0 else -999999
 
-# Example main feed card loop (adapt to your filtered list)
-for art in filtered[:12]:
+# ────────────────────────────────────────────────
+#  Top Stories
+# ────────────────────────────────────────────────
+st.subheader("Top Stories")
+top_items = sorted(news[:40], key=priority, reverse=True)[:4]
+
+for item in top_items:
     with st.container():
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        
-        if art['image']:
-            st.image(art['image'], use_column_width=True)
-        
+        if item['image']:
+            st.image(item['image'], use_column_width=True)
+        else:
+            st.markdown('<div style="height:160px; background:#555;"></div>', unsafe_allow_html=True)
+
         st.markdown(f"""
-            <div class="card-gradient">
-                <div class="card-title"><a href="{art['link']}" target="_blank" style="color:white; text-decoration:none;">{art['title']}</a></div>
-                <div class="card-meta">📰 {art['source']} • {art['published']}</div>
-                <p style="margin:8px 0 12px 0; color:#eee;">{art['summary']}</p>
-                
-                <div>
-                    <button class="action-btn like-btn" onclick="parent.window.location.href='{art['link']}'">Read Article</button>
-                    <button class="action-btn like-btn">👍 Like</button>
-                    <button class="action-btn dislike-btn">👎 Dislike</button>
+            <div class="gradient-bottom">
+                <div class="card-title">
+                    <a href="{item['link']}" target="_blank" style="color:white; text-decoration:none;">
+                        {item['title']}
+                    </a>
+                </div>
+                <div class="card-meta">📰 {item['source']} • {item['published']}</div>
+                <div style="margin-top:12px;">
+                    <a href="{item['link']}" target="_blank">
+                        <button class="btn">Read Article</button>
+                    </a>
+                    <button class="btn btn-like" onclick="alert('Liked!')">👍 Like</button>
+                    <button class="btn btn-dislike" onclick="alert('Disliked!')">👎 Dislike</button>
                 </div>
             </div>
         """, unsafe_allow_html=True)
-        
         st.markdown('</div>', unsafe_allow_html=True)
 
-# Keep War mode probabilities section if mode == "War"
+st.markdown("---")
+
+# ────────────────────────────────────────────────
+#  Main feed
+# ────────────────────────────────────────────────
+st.subheader(f"{mode} Feed")
+
+keywords = {
+    "War": ["war", "ukraine", "russia", "israel", "iran", "gaza", "military", "nato", "conflict"],
+    "Politics": ["trump", "biden", "harris", "election", "congress", "senate", "republican", "democrat", "border"],
+    "Economics": ["economy", "inflation", "jobs", "market", "fed", "tariff", "oil", "recession"]
+}
+
+items = news
+if mode != "All":
+    items = [a for a in news if any(k.lower() in (a['title']+a['summary']).lower() for k in keywords.get(mode, []))]
+
+items = sorted(items, key=priority, reverse=True)[:12]
+
+if not items:
+    st.info("No recent stories in this section right now – try another mode or refresh later.")
+
+for item in items:
+    with st.container():
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        if item['image']:
+            st.image(item['image'], use_column_width=True)
+        else:
+            st.markdown('<div style="height:160px; background:#555;"></div>', unsafe_allow_html=True)
+
+        st.markdown(f"""
+            <div class="gradient-bottom">
+                <div class="card-title">
+                    <a href="{item['link']}" target="_blank" style="color:white; text-decoration:none;">
+                        {item['title']}
+                    </a>
+                </div>
+                <div class="card-meta">📰 {item['source']} • {item['published']}</div>
+                <p style="margin:8px 0 12px 0; color:#eee; font-size:0.97rem;">{item['summary']}</p>
+                <div>
+                    <a href="{item['link']}" target="_blank">
+                        <button class="btn">Read Article</button>
+                    </a>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ────────────────────────────────────────────────
+#  War probabilities
+# ────────────────────────────────────────────────
+if mode == "War":
+    st.markdown("---")
+    st.subheader("War Outlook – Estimated Next Moves")
+    probs = [
+        ("Major escalation or new front", 38),
+        ("U.S. or Israel strikes Iran assets", 44),
+        ("Energy / oil prices spike sharply", 59),
+        ("Temporary ceasefire talks advance", 22),
+        ("Expanded sanctions or cyber response", 63)
+    ]
+    cols = st.columns(2)
+    for i, (txt, pct) in enumerate(probs):
+        with cols[i % 2]:
+            st.write(f"**{txt}**")
+            st.progress(pct / 100)
+            st.caption(f"{pct}%")
+
+st.sidebar.caption("THEREALNEWS with Lawrence • Conservative feed")
