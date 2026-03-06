@@ -6,9 +6,7 @@ import time
 
 st.set_page_config(page_title="THEREALNEWS with Lawrence", page_icon="📰", layout="wide")
 
-# ────────────────────────────────────────────────
-# Persistent settings (must come first)
-# ────────────────────────────────────────────────
+# Persistent settings
 if 'dark_mode' not in st.session_state:
     st.session_state.dark_mode = True
 if 'font_size' not in st.session_state:
@@ -28,38 +26,15 @@ if 'loaded_count' not in st.session_state:
 if 'x_menu_open' not in st.session_state:
     st.session_state.x_menu_open = False
 
-# ────────────────────────────────────────────────
-# RSS feeds – defined EARLY so sidebar can use it
-# ────────────────────────────────────────────────
-RSS_FEEDS = {
-    "Fox News": [
-        "https://moxie.foxnews.com/google-publisher/latest.xml",
-        "https://moxie.foxnews.com/google-publisher/politics.xml",
-        "https://moxie.foxnews.com/google-publisher/world.xml"
-    ],
-    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
-    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
-    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
-    "The Federalist": ["https://thefederalist.com/feed/"],
-    "Epoch Times": ["https://www.theepochtimes.com/feed"],
-    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
-    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
-    "National Review": ["https://www.nationalreview.com/feed"],
-    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
-}
-
-# ────────────────────────────────────────────────
 # Font sizes
-# ────────────────────────────────────────────────
 font_sizes = {
     "Small": {"title": "1.2rem", "meta": "0.85rem", "summary": "0.92rem"},
     "Medium": {"title": "1.42rem", "meta": "0.96rem", "summary": "0.98rem"},
     "Large": {"title": "1.6rem", "meta": "1.05rem", "summary": "1.08rem"}
 }
+fs = font_sizes[st.session_state.font_size]
 
-# ────────────────────────────────────────────────
 # Mode colors
-# ────────────────────────────────────────────────
 mode_colors = {
     "All": {"accent": "#ff4d4d", "header": "#ff4d4d"},
     "War": {"accent": "#c62828", "header": "#ff4d4d"},
@@ -67,16 +42,11 @@ mode_colors = {
     "Economics": {"accent": "#ffb300", "header": "#ffca28"}
 }
 
-# ────────────────────────────────────────────────
-# Select mode EARLY (before CSS)
-# ────────────────────────────────────────────────
+# Select mode EARLY
 mode = st.selectbox("Section", ["All", "War", "Politics", "Economics"], index=0)
 colors = mode_colors.get(mode, mode_colors["All"])
 
-# ────────────────────────────────────────────────
-# Dynamic styling
-# ────────────────────────────────────────────────
-fs = font_sizes[st.session_state.font_size]
+# Dynamic styling + X button color matching mode
 if st.session_state.dark_mode:
     st.markdown(f"""
         <style>
@@ -97,11 +67,12 @@ if st.session_state.dark_mode:
             hr {{ border-color: #444; margin: 48px 0 64px 0; }}
             .x-float-btn {{ 
                 position: fixed; right: 30px; bottom: 40px; z-index: 999;
-                background: #000; color: white; border: none; border-radius: 50%; 
-                width: 60px; height: 60px; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                background: {colors['accent']}; color: white; border: none; border-radius: 50%; 
+                width: 60px; height: 60px; font-size: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
                 cursor: pointer; display: flex; align-items: center; justify-content: center;
+                transition: all 0.2s;
             }}
-            .x-menu {{ background: #161b22; border-left: 1px solid #30363d; padding: 20px; height: 100vh; overflow-y: auto; }}
+            .x-float-btn:hover {{ transform: scale(1.1); }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -109,37 +80,38 @@ if st.session_state.dark_mode:
 st.markdown(f'<div style="font-size:3.5rem; font-weight:bold; text-align:center; color:{colors["header"]};">THEREALNEWS</div>', unsafe_allow_html=True)
 st.markdown('<div style="text-align:center; font-size:1.45rem; color:#aaa; margin-top:-12px;">with Lawrence</div>', unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-# X floating button
-# ────────────────────────────────────────────────
-st.markdown('<div class="x-float-btn">𝕏</div>', unsafe_allow_html=True)
-if st.button("𝕏", help="Open X menu", key="x_float_btn"):
-    st.session_state.x_menu_open = not st.session_state.x_menu_open
+# Floating X button (now colored by mode)
+st.markdown(f'<div class="x-float-btn" onclick="document.getElementById(\'x_menu_trigger\').click()">𝕏</div>', unsafe_allow_html=True)
 
-# X side menu
+# Hidden trigger for the button
+if st.button("Open X Menu", key="x_menu_trigger", help="X Integration"):
+    st.session_state.x_menu_open = not st.session_state.x_menu_open
+    st.rerun()
+
+# X side menu (opens on right when button clicked)
 if st.session_state.x_menu_open:
     with st.sidebar:
         st.subheader("X (Twitter) Integration")
         x_query = st.text_input("Search X for...", value=f"{mode} news conservative")
         if st.button("Search X"):
-            st.info(f"Searching X for: {x_query}... (real integration would show posts here)")
-        
-        st.markdown("**Recent conservative voices**")
+            st.info(f"Searching X for: {x_query}... (real X posts would appear here)")
+            st.caption("(In full version this would show recent tweets using X search API)")
+
+        st.markdown("**Follow these conservative voices**")
         conservative_accounts = ["@realDonaldTrump", "@FoxNews", "@BreitbartNews", "@NEWSMAX", "@DailyWire", "@OANN"]
         for acc in conservative_accounts:
             st.markdown(f"- {acc}")
 
-        st.markdown("**Share current page to X**")
-        if st.button("Post this feed to X"):
+        st.markdown("**Share current story or feed to X**")
+        if st.button("Share this feed to X"):
             st.toast("Link copied – paste into X!")
+            st.info("Current page link would be copied here")
 
         if st.button("Close X Menu"):
             st.session_state.x_menu_open = False
             st.rerun()
 
-# ────────────────────────────────────────────────
-# Sidebar – main controls
-# ────────────────────────────────────────────────
+# Rest of sidebar controls
 with st.sidebar:
     st.header("Personalize")
     st.session_state.dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
@@ -172,9 +144,24 @@ with st.sidebar:
     st.markdown("**Daily Thought**")
     st.caption(random.choice(quotes))
 
-# ────────────────────────────────────────────────
-# Fetch news
-# ────────────────────────────────────────────────
+# RSS feeds
+RSS_FEEDS = {
+    "Fox News": [
+        "https://moxie.foxnews.com/google-publisher/latest.xml",
+        "https://moxie.foxnews.com/google-publisher/politics.xml",
+        "https://moxie.foxnews.com/google-publisher/world.xml"
+    ],
+    "Breitbart": ["https://feeds.feedburner.com/breitbart"],
+    "Newsmax": ["https://www.newsmax.com/rss/newsfront/16"],
+    "Daily Wire": ["https://www.dailywire.com/feeds/rss.xml"],
+    "The Federalist": ["https://thefederalist.com/feed/"],
+    "Epoch Times": ["https://www.theepochtimes.com/feed"],
+    "OANN": ["https://www.oann.com/category/newsroom/feed/"],
+    "Washington Examiner": ["https://www.washingtonexaminer.com/feed"],
+    "National Review": ["https://www.nationalreview.com/feed"],
+    "The Blaze": ["https://www.theblaze.com/feeds/feed.rss"]
+}
+
 @st.cache_data(ttl=600)
 def fetch_all_news():
     articles = []
@@ -191,7 +178,6 @@ def fetch_all_news():
                     if pub_date < one_day_ago:
                         continue
 
-                    # Relative time
                     delta = now - pub_date
                     if delta.days == 0:
                         hours = delta.seconds // 3600
